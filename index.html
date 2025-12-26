@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI SOP Generator | SOP Documentation Software | OPOR8</title>
+  <meta name="description" content="OPOR8 is the elite AI SOP generator and SOP documentation software for enterprises. Create automated SOP templates for HR, Sales, and Operations in PDF and Word.">
+  <meta name="keywords" content="AI SOP generator, SOP documentation software, SOP creation tool, standard operating procedure software, SOP automation platform, AI document generation">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      scroll-behavior: smooth;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Outfit', sans-serif;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .stagger-item {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.active .stagger-item:nth-child(1) { transition-delay: 100ms; opacity: 1; transform: translateY(0); }
+    .reveal.active .stagger-item:nth-child(2) { transition-delay: 200ms; opacity: 1; transform: translateY(0); }
+    .reveal.active .stagger-item:nth-child(3) { transition-delay: 300ms; opacity: 1; transform: translateY(0); }
+    .reveal.active .stagger-item:nth-child(4) { transition-delay: 400ms; opacity: 1; transform: translateY(0); }
+    .reveal.active .stagger-item:nth-child(5) { transition-delay: 500ms; opacity: 1; transform: translateY(0); }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    
+    .perspective-1000 { perspective: 1000px; }
+    .rotate-y-neg-5 { transform: rotateY(-5deg); }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-router-dom": "https://esm.sh/react-router-dom@^6.22.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "dotenv": "https://esm.sh/dotenv@^17.2.3",
+    "cors": "https://esm.sh/cors@^2.8.5",
+    "helmet": "https://esm.sh/helmet@^8.1.0",
+    "os": "https://esm.sh/os@^0.1.2",
+    "express-rate-limit": "https://esm.sh/express-rate-limit@^8.2.1",
+    "compression": "https://esm.sh/compression@^1.8.1",
+    "body-parser": "https://esm.sh/body-parser@^2.2.1",
+    "express": "https://esm.sh/express@^5.2.1",
+    "cluster": "https://esm.sh/cluster@^0.7.7",
+    "morgan": "https://esm.sh/morgan@^1.10.1"
+  }
+}
+</script>
+</head>
+<body class="bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
