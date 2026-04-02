@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DB } from '../../services/dbSupabase';
+import { DB } from '../../services/db';
 import { SOPDocument } from '../../types';
 
 export const AdminSamplesView: React.FC = () => {

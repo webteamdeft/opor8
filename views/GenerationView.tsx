@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { BusinessProfile, StepStatus, SOPDocument } from '../types';
 import { getSOPListForPack, generateSOPContent } from '../services/ai';
-import { DB } from '../services/dbSupabase';
+import { DB } from '../services/db';
 
 interface GenerationViewProps {
   packId: string;

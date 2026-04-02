@@ -2,14 +2,14 @@
 
 ## Quick Start
 
-The application is now fully configured with Supabase and ready to use!
+The application is now fully configured with the Custom API and ready to use!
 
 ### 1. Start the Development Server
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app will be available at `http://localhost:5173` (or the port shown in your terminal)
 
 ### 2. Create Your First Account
 
@@ -18,18 +18,9 @@ The app will be available at `http://localhost:3000`
 3. Enter your name, email, and password
 4. Click "Sign Up Free"
 
-### 3. Make Yourself an Admin (Optional)
+### 3. Access Admin Pages (Optional)
 
-After creating your account, you can upgrade yourself to admin:
-
-1. Go to your Supabase Dashboard
-2. Navigate to SQL Editor
-3. Run this query (replace with your email):
-```sql
-UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
-```
-
-4. Refresh the app - you'll now have admin access!
+After creating your account, use the Admin view to manage users and payments. Your role must be set to 'admin' in the database (via the API).
 
 ## Application Features
 
@@ -106,7 +97,7 @@ UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
 
 ### Security
 
-All tables have Row Level Security (RLS) enabled:
+All API endpoints are protected with JWT authentication and Role-Based Access Control (RBAC):
 - Users can only access their own data
 - Admins have full access to all data
 - Help articles are public to authenticated users
@@ -129,9 +120,7 @@ GEMINI_API_KEY=your_api_key_here
 Required variables (already configured in `.env`):
 
 ```
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-GEMINI_API_KEY=your_gemini_api_key (optional, for AI generation)
+VITE_API_BASE_URL=http://1.6.98.142:8800/api/v1
 ```
 
 ## Testing the Full Flow
@@ -170,14 +159,14 @@ GEMINI_API_KEY=your_gemini_api_key (optional, for AI generation)
 ### Chat not updating
 - Chat refreshes every 3 seconds
 - Check browser console for errors
-- Verify Supabase connection
+- Verify API server connection
 
 ## Production Deployment
 
 ### Before deploying:
 
-1. **Set up production Supabase project**
-   - Create new project at supabase.com
+1. **Set up production API server**
+   - Ensure your backend is reachable
    - Update `.env` with production credentials
 
 2. **Configure Gemini API**
@@ -203,8 +192,8 @@ GEMINI_API_KEY=your_gemini_api_key (optional, for AI generation)
 
 For issues or questions:
 - Check browser console for errors
-- Check Supabase logs for database issues
-- Review RLS policies if access is denied
+- Check API server logs for database issues
+- Review authorization headers if access is denied
 
 ## Next Steps
 

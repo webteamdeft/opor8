@@ -1,185 +1,330 @@
-
-import { 
-  User, BusinessProfile, SOPPack, SOPDocument, QuestionnaireAnswers, 
-  SupportTicket, HelpArticle, ChatSession, ChatMessage, GlobalConfig 
+import {
+  SOPDocument, SOPPack, User, BusinessProfile, QuestionnaireAnswers,
+  SupportTicket, HelpArticle, ChatSession, ChatMessage, GlobalConfig,
+  TransactionResponse, Product
 } from "../types";
-import { INITIAL_USER, INITIAL_HELP_ARTICLES, INITIAL_DOCUMENTS } from "./initialData";
+import { api, BASE_URL } from './api';
 
-const DB_KEYS = {
-  USERS: 'op8_users',
-  PROFILES: 'op8_profiles',
-  PACKS: 'op8_packs',
-  DOCS: 'op8_docs',
-  ANSWERS: 'op8_answers',
-  TICKETS: 'op8_tickets',
-  ARTICLES: 'op8_help_articles',
-  CHATS: 'op8_chats',
-  CONFIG: 'op8_global_config'
-};
-
-const get = <T>(key: string): T[] => {
-  try {
-    return JSON.parse(localStorage.getItem(key) || '[]');
-  } catch (e) {
-    return [];
-  }
-};
-
-const set = (key: string, data: any) => {
-  localStorage.setItem(key, JSON.stringify(data));
-};
+/**
+ * DB Service Refactored for Custom API
+ * All paths are relative to the /api/v1 base URL defined in api.ts
+ */
 
 export const DB = {
-  initialize: () => {
-    // Seed Users
-    if (get(DB_KEYS.USERS).length === 0) {
-      set(DB_KEYS.USERS, [INITIAL_USER]);
-    }
-    // Seed Articles
-    if (get(DB_KEYS.ARTICLES).length === 0) {
-      set(DB_KEYS.ARTICLES, INITIAL_HELP_ARTICLES);
-    }
-    // Seed Docs
-    if (get(DB_KEYS.DOCS).length === 0) {
-      set(DB_KEYS.DOCS, INITIAL_DOCUMENTS);
-    }
-    // Seed Config
-    if (!localStorage.getItem(DB_KEYS.CONFIG)) {
-      set(DB_KEYS.CONFIG, {
-        supportEmail: 'support@opor8.ai',
-        welcomeMessage: 'Welcome to the elite procedural engine. How can we optimize your operations today?'
-      });
-    }
-  },
-
-  config: {
-    get: (): GlobalConfig => JSON.parse(localStorage.getItem(DB_KEYS.CONFIG) || JSON.stringify({
-      supportEmail: 'support@opor8.ai',
-      welcomeMessage: 'Welcome to the elite procedural engine.'
-    })),
-    update: (updates: Partial<GlobalConfig>) => {
-      const current = DB.config.get();
-      set(DB_KEYS.CONFIG, { ...current, ...updates });
-    }
-  },
-
   users: {
-    find: (email: string) => get<User>(DB_KEYS.USERS).find(u => u.email.toLowerCase() === email.toLowerCase()),
-    getAll: () => get<User>(DB_KEYS.USERS),
-    create: (user: User) => {
-      const users = get<User>(DB_KEYS.USERS);
-      users.push(user);
-      set(DB_KEYS.USERS, users);
+    async getAll(): Promise<User[]> {
+      return api.get('/users');
     },
-    update: (id: string, updates: Partial<User>) => {
-      const users = get<User>(DB_KEYS.USERS).map(u => u.id === id ? { ...u, ...updates } : u);
-      set(DB_KEYS.USERS, users);
+
+    async update(id: string, updates: Partial<User>): Promise<void> {
+      return api.put(`/users/${id}`, updates);
     }
   },
 
   profiles: {
-    getByUser: (userId: string) => get<BusinessProfile>(DB_KEYS.PROFILES).find(p => p.userId === userId),
-    upsert: (profile: BusinessProfile) => {
-      const profiles = get<BusinessProfile>(DB_KEYS.PROFILES).filter(p => p.userId !== profile.userId);
-      profiles.push(profile);
-      set(DB_KEYS.PROFILES, profiles);
+    async getByUser(userId: string): Promise<BusinessProfile | null> {
+      try {
+        // Fetch current user's profile
+        const response = await api.get('/user/profile');
+        const data = response.data || response;
+        const profileData = data.profile || data.businessProfile || data;
+
+        return {
+          userId: profileData.userId || userId,
+          name: profileData.name || profileData.businessName || '',
+          industry: profileData.industry || profileData.industryType || '',
+          size: profileData.size || '',
+          country: profileData.country || '',
+          tone: profileData.tone || profileData.complianceTone || 'Professional',
+          logoUrl: profileData.logoUrl || profileData.logo_url || profileData.brandingLogo || '',
+          // Additional fields for API
+          fullName: profileData.fullName || '',
+          dob: profileData.dob || '',
+          gender: profileData.gender || '',
+          businessName: profileData.businessName || profileData.name || '',
+          industryType: profileData.industryType || profileData.industry || '',
+          complianceTone: profileData.complianceTone || profileData.tone || '',
+          primaryExportFormat: profileData.primaryExportFormat || 'PDF',
+          brandingLogo: profileData.brandingLogo || profileData.logoUrl || profileData.logo_url || ''
+        };
+      } catch (err) {
+        console.warn('[DB] Failed to fetch profile:', err);
+        return null;
+      }
+    },
+
+    async upsert(profile: BusinessProfile | FormData): Promise<void> {
+      return api.put('/user/profile', profile);
     }
   },
-
+  // 
   packs: {
-    getAll: (userId?: string) => {
-      const all = get<SOPPack>(DB_KEYS.PACKS);
-      return userId ? all.filter(p => p.userId === userId) : all;
+    async getAll(userId?: string): Promise<SOPPack[]> {
+      const endpoint = userId ? `/packs?userId=${userId}` : '/packs';
+      return api.get(endpoint);
     },
-    create: (pack: SOPPack) => {
-      const packs = get<SOPPack>(DB_KEYS.PACKS);
-      packs.push(pack);
-      set(DB_KEYS.PACKS, packs);
+
+    async create(pack: SOPPack): Promise<void> {
+      return api.post('/packs', pack);
     },
-    update: (id: string, updates: Partial<SOPPack>) => {
-      const packs = get<SOPPack>(DB_KEYS.PACKS).map(p => p.id === id ? { ...p, ...updates } : p);
-      set(DB_KEYS.PACKS, packs);
+
+    async update(id: string, updates: Partial<SOPPack>): Promise<void> {
+      return api.put(`/packs/${id}`, updates);
     }
   },
 
   docs: {
-    getByPack: (packId: string) => get<SOPDocument>(DB_KEYS.DOCS).filter(d => d.packId === packId),
-    getAll: () => get<SOPDocument>(DB_KEYS.DOCS),
-    createBatch: (docs: SOPDocument[]) => {
-      const existing = get<SOPDocument>(DB_KEYS.DOCS);
-      set(DB_KEYS.DOCS, [...existing, ...docs]);
-    }
-  },
-
-  articles: {
-    getAll: () => get<HelpArticle>(DB_KEYS.ARTICLES),
-    upsert: (article: HelpArticle) => {
-      const all = get<HelpArticle>(DB_KEYS.ARTICLES).filter(a => a.id !== article.id);
-      all.push(article);
-      set(DB_KEYS.ARTICLES, all);
+    async getByPack(packId: string): Promise<SOPDocument[]> {
+      return api.get(`/docs?packId=${packId}`);
     },
-    delete: (id: string) => {
-      const all = get<HelpArticle>(DB_KEYS.ARTICLES).filter(a => a.id !== id);
-      set(DB_KEYS.ARTICLES, all);
-    }
-  },
 
-  chats: {
-    getOrCreate: (userId: string, userName: string): ChatSession => {
-      const all = get<ChatSession>(DB_KEYS.CHATS);
-      const existing = all.find(c => c.userId === userId && c.status === 'active');
-      if (existing) return existing;
-      
-      const newSession: ChatSession = {
-        id: 'chat_' + Math.random().toString(36).substr(2, 9),
-        userId,
-        userName,
-        messages: [],
-        status: 'active',
-        lastActivity: new Date().toISOString()
+    async getAll(): Promise<SOPDocument[]> {
+      return api.get('/docs');
+    },
+
+    async createBatch(docs: SOPDocument[]): Promise<void> {
+      return api.post('/docs/batch', { docs });
+    },
+
+    async generateDocument(question: string): Promise<{ title: string, businessVertical: string, lastSynthesis: string, pdfUrl: string, docxUrl: string }> {
+      const response = await api.post('/openai/generate-document', { question });
+      // The API returns { success: true, data: { ... } }
+      const data = response.data || response;
+
+      // Prepend root BASE_URL if the URLs are relative (stripping /api/v1)
+      const rootURL = BASE_URL.replace(/\/api\/v1\/?$/, '');
+
+      return {
+        ...data,
+        pdfUrl: data.pdfUrl?.startsWith('http') ? data.pdfUrl : `${rootURL}${data.pdfUrl}`,
+        docxUrl: data.docxUrl?.startsWith('http') ? data.docxUrl : `${rootURL}${data.docxUrl}`
       };
-      all.push(newSession);
-      set(DB_KEYS.CHATS, all);
-      return newSession;
     },
-    sendMessage: (sessionId: string, message: ChatMessage) => {
-      const all = get<ChatSession>(DB_KEYS.CHATS);
-      const updated = all.map(c => {
-        if (c.id === sessionId) {
-          return {
-            ...c,
-            messages: [...c.messages, message],
-            lastActivity: new Date().toISOString()
+
+    async generateDocumentWithAnswers(answers: { type: string, questionId: string, answer: string }[]): Promise<any> {
+      return await api.post('/openai/generate-document-answer', { answers });
+    },
+
+    async getActiveJob(): Promise<any> {
+      try {
+        return await api.get('/openai/active-job');
+      } catch (error: any) {
+        return { success: false, message: error?.message || 'No active job' };
+      }
+    },
+
+    async getJobProgress(jobId: string): Promise<any> {
+      try {
+        const response = await api.get(`/openai/progress/${jobId}`);
+        const data = response.data || response;
+        const result = response.result || data.result;
+
+        // Normalize status to lowercase
+        const status = (response.status || data.status || 'in-progress').toLowerCase();
+        const progress = typeof response.progress === 'number' ? response.progress : (typeof data.progress === 'number' ? data.progress : parseInt(data.progress || response.progress) || 0);
+
+        let formattedResult = result;
+        if (result) {
+          const rootURL = BASE_URL.replace(/\/api\/v1\/?$/, '');
+          formattedResult = {
+            ...result,
+            pdfUrl: result.pdfUrl?.startsWith('http') ? result.pdfUrl : `${rootURL}${result.pdfUrl}`,
+            docxUrl: result.docxUrl?.startsWith('http') ? result.docxUrl : `${rootURL}${result.docxUrl}`,
+            htmlUrl: result.htmlUrl?.startsWith('http') ? result.htmlUrl : `${rootURL}${result.htmlUrl}`
           };
         }
-        return c;
-      });
-      set(DB_KEYS.CHATS, updated);
+
+        return {
+          ...response,
+          ...data,
+          status: status as any,
+          progress,
+          result: formattedResult
+        };
+      } catch (error) {
+        console.error(`[DB] Error fetching job progress ${jobId}:`, error);
+        throw error;
+      }
     },
-    getAll: () => get<ChatSession>(DB_KEYS.CHATS)
+
+    getSSEUrl(jobId: string): string {
+      return `${BASE_URL.replace(/\/api\/v1\/?$/, '')}/api/v1/openai/progress/${jobId}`;
+    },
+
+    async getUserDocuments(options: {
+      offset?: number;
+      limit?: number;
+      search?: string;
+      sort?: string;
+      order?: number;
+    } = {}): Promise<SOPDocument[]> {
+      const payload = {
+        offset: options.offset ?? 0,
+        limit: options.limit ?? 10,
+        search: options.search ?? '',
+        sort: options.sort ?? 'createdAt',
+        order: options.order ?? -1
+      };
+
+      const response = await api.post('/user/document-list', payload);
+      const data = response.data || response;
+      const list = data.list || [];
+      const rootURL = BASE_URL.replace(/\/api\/v1\/?$/, '');
+
+      return list.map((doc: any) => ({
+        id: doc._id,
+        title: doc.title,
+        department: doc.businessVertical,
+        lastUpdated: doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : 'N/A',
+        pdfUrl: doc.pdfUrl ? (doc.pdfUrl.startsWith('http') ? doc.pdfUrl : `${rootURL}${doc.pdfUrl}`) : undefined,
+        docxUrl: doc.docxUrl ? (doc.docxUrl.startsWith('http') ? doc.docxUrl : `${rootURL}${doc.docxUrl}`) : undefined,
+        deploymentStatus: doc.deploymentStatus || 'Live & Audit-Ready'
+      }));
+    },
+
+    async downloadAllDocumentsZip(options: {
+      search?: string;
+      sort?: string;
+      order?: number;
+    } = {}): Promise<{ url: string }> {
+      const payload = {
+        offset: 0,
+        limit: 1000,
+        search: options.search ?? '',
+        sort: options.sort ?? 'createdAt',
+        order: options.order ?? -1
+      };
+
+      const response = await api.post('/user/document-zip', payload);
+      const data = response.data || response;
+      const rootURL = BASE_URL.replace(/\/api\/v1\/?$/, '');
+
+      return {
+        url: data.url?.startsWith('http') ? data.url : `${rootURL}${data.url}`
+      };
+    }
   },
 
   answers: {
-    get: (packId: string) => get<QuestionnaireAnswers>(DB_KEYS.ANSWERS).find(a => a.packId === packId),
-    upsert: (answers: QuestionnaireAnswers) => {
-      const all = get<QuestionnaireAnswers>(DB_KEYS.ANSWERS).filter(a => a.packId !== answers.packId);
-      all.push(answers);
-      set(DB_KEYS.ANSWERS, all);
+    async get(packId: string): Promise<QuestionnaireAnswers | null> {
+      try {
+        return await api.get(`/answers/${packId}`);
+      } catch (err) {
+        return null;
+      }
+    },
+
+    async upsert(answers: QuestionnaireAnswers): Promise<void> {
+      return api.post('/answers/upsert', answers);
     }
   },
 
   tickets: {
-    getAll: () => get<SupportTicket>(DB_KEYS.TICKETS),
-    create: (ticket: Partial<SupportTicket>) => {
-      const tickets = get<SupportTicket>(DB_KEYS.TICKETS);
-      const newTicket = {
-        ...ticket,
-        id: 'tkt_' + Math.random().toString(36).substr(2, 9),
-        status: 'Open',
-        createdAt: new Date().toISOString()
-      } as SupportTicket;
-      tickets.push(newTicket);
-      set(DB_KEYS.TICKETS, tickets);
+    async getAll(): Promise<SupportTicket[]> {
+      return api.get('/tickets');
+    },
+
+    async create(ticket: Partial<SupportTicket>): Promise<void> {
+      return api.post('/tickets', ticket);
+    },
+
+    async updateStatus(id: string, status: 'Open' | 'Closed'): Promise<void> {
+      return api.put(`/tickets/${id}/status`, { status });
+    }
+  },
+
+  articles: {
+    async getAll(): Promise<HelpArticle[]> {
+      return api.get('/articles');
+    },
+
+    async upsert(article: HelpArticle): Promise<void> {
+      return api.post('/articles/upsert', article);
+    },
+
+    async delete(id: string): Promise<void> {
+      return api.delete(`/articles/${id}`);
+    }
+  },
+
+  chats: {
+    async getOrCreate(userId: string, userName: string): Promise<ChatSession> {
+      return api.post('/chats/session', { userId, userName });
+    },
+
+    async sendMessage(sessionId: string, message: ChatMessage): Promise<void> {
+      return api.post(`/chats/session/${sessionId}/messages`, message);
+    },
+
+    async getAll(): Promise<ChatSession[]> {
+      return api.get('/chats/sessions');
+    }
+  },
+
+  config: {
+    async get(): Promise<GlobalConfig> {
+      return api.get('/config');
+    },
+
+    async update(updates: Partial<GlobalConfig>): Promise<void> {
+      return api.put('/config', updates);
+    }
+  },
+
+  payments: {
+    async getProducts(): Promise<{ data: Product[] }> {
+      return api.get('/payment/plans');
+    },
+
+
+    async createStripeSession(planId: string): Promise<{ url: string }> {
+      // Use the specific plan ID from the product data
+      return api.get(`/payment/stripe/${planId}`);
+    },
+
+
+    async getTransactionHistory(options: {
+      offset?: number;
+      limit?: number;
+      sort?: string;
+      order?: number;
+      search?: string;
+    } = {}): Promise<TransactionResponse> {
+      const payload = {
+        offset: options.offset ?? 0,
+        limit: options.limit ?? 10,
+        sort: options.sort ?? 'createdAt',
+        order: options.order ?? -1,
+        search: options.search ?? ''
+      };
+      return api.post('/user/transaction-history', payload);
+    }
+  },
+
+  companies: {
+    async getCompanyList(): Promise<any> {
+      const payload = {
+        offset: 0,
+        limit: 10,
+        sort: "createdAt",
+        order: -1,
+        search: ""
+      };
+      const response = await api.post('/user/company-list', payload);
+      return response.data || response;
+    },
+
+    async getQuestions(companyId: string): Promise<any> {
+      const payload = {
+        companyId,
+        offset: 0,
+        limit: 10,
+        sort: "createdAt",
+        order: -1,
+        search: ""
+      };
+      const response = await api.post('/user/questions-list', payload);
+      return response.data || response;
     }
   }
 };

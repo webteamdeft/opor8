@@ -31,8 +31,10 @@ import { GuidesView } from '../views/GuidesView';
 import { BlogView } from '../views/BlogView';
 import { PrivacyView } from '../views/PrivacyView';
 import { TermsView } from '../views/TermsView';
+import { SuccessView } from '../views/payment/SuccessView';
+import { CancelView } from '../views/payment/CancelView';
 import { RoleGuard } from '../components/RoleGuard';
-import { DB } from '../services/dbSupabase';
+import { DB } from '../services/db';
 
 interface AppRoutesProps {
   user: User | null;
@@ -59,6 +61,21 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  const handleUpgrade = async () => {
+    try {
+      const { url } = await DB.payments.createStripeSession('pro');
+      if (url) {
+        console.log(url);
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Error initiating upgrade:', error);
+      alert('Failed to initiate payment. Please try again later.');
+    }
+  };
+
   return (
     <Routes>
       {/* Public Routes */}
@@ -71,7 +88,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/departments" element={<DepartmentsView />} />
       <Route path="/templates" element={<TemplatesView />} />
       <Route path="/security" element={<SecurityPageView />} />
-      <Route path="/pricing" element={<PricingView />} />
+      <Route path="/pricing" element={<PricingView user={user} />} />
       <Route path="/about" element={<AboutView />} />
       <Route path="/contact" element={<ContactView />} />
       <Route path="/guides" element={<GuidesView />} />
@@ -79,58 +96,63 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/privacy" element={<PrivacyView />} />
       <Route path="/terms" element={<TermsView />} />
 
+      {/* Payment Routes */}
+      <Route path="/payment/success" element={<SuccessView />} />
+      <Route path="/payment/cancel" element={<CancelView />} />
+
       {/* Protected User Routes */}
       <Route element={<RoleGuard user={user}><Layout user={user!} /></RoleGuard>}>
-        <Route 
-          path="/onboarding" 
+        <Route
+          path="/onboarding"
           element={
-            <OnboardingView 
-              profile={businessProfile} 
-              setProfile={setBusinessProfile} 
-              userId={user?.id || ''} 
+            <OnboardingView
+              profile={businessProfile}
+              setProfile={setBusinessProfile}
+              userId={user?.id || ''}
               onComplete={async (p) => {
                 await DB.profiles.upsert(p);
                 setBusinessProfile(p);
                 navigate('/dashboard');
-              }} 
+              }}
             />
-          } 
+          }
         />
-        <Route 
-          path="/dashboard" 
-          element={<DashboardView onStartSOP={() => navigate('/builder')} onViewAll={() => navigate('/library')} />} 
+        <Route
+          path="/dashboard"
+          element={<DashboardView user={user!} onStartSOP={() => navigate('/builder')} onViewAll={() => navigate('/library')} />}
         />
-        <Route 
-          path="/builder" 
-          element={<SOPBuilderView userId={user?.id || ''} onNext={(id) => { setActivePackId(id); navigate('/questionnaire'); }} />} 
+        <Route
+          path="/builder"
+          element={<SOPBuilderView user={user!} onNext={(id) => { setActivePackId(id); navigate('/questionnaire'); }} />}
         />
-        <Route 
-          path="/questionnaire" 
-          element={<QuestionnaireView packId={activePackId!} onComplete={() => navigate('/samples')} />} 
+        <Route
+          path="/questionnaire"
+          element={<QuestionnaireView packId={activePackId!} onComplete={() => navigate('/samples')} />}
         />
-        <Route 
-          path="/samples" 
-          element={<SamplesView packId={activePackId!} logoUrl={businessProfile.logoUrl} onUpgrade={() => navigate('/billing')} />} 
+        <Route
+          path="/samples"
+          element={<SamplesView packId={activePackId!} logoUrl={businessProfile.logoUrl} onUpgrade={handleUpgrade} isPro={user?.isPro} />}
         />
-        <Route 
-          path="/library" 
-          element={<LibraryView userId={user?.id || ''} onOpenDoc={(d) => { setActiveDoc(d); navigate('/viewer'); }} />} 
+        <Route
+          path="/library"
+          element={<LibraryView user={user!} onOpenDoc={(d) => { setActiveDoc(d); navigate('/viewer'); }} />}
         />
-        <Route 
-          path="/viewer" 
-          element={<DocumentViewerView doc={activeDoc!} onBack={() => navigate('/library')} logoUrl={businessProfile.logoUrl} />} 
+        <Route
+          path="/viewer"
+          element={<DocumentViewerView doc={activeDoc!} user={user!} onBack={() => navigate('/library')} logoUrl={businessProfile.logoUrl} />}
         />
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
             <SettingsView
+              user={user!}
               profile={businessProfile}
               setProfile={async (p) => { setBusinessProfile(p); await DB.profiles.upsert(p); }}
               onLogout={onLogout}
             />
-          } 
+          }
         />
-        <Route path="/billing" element={<BillingView user={user!} onUpgrade={() => navigate('/billing')} />} />
+        <Route path="/billing" element={<BillingView user={user!} onUpgrade={handleUpgrade} />} />
         <Route path="/support" element={<SupportView user={user!} />} />
       </Route>
 

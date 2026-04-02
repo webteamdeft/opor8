@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { DB } from '../services/dbSupabase';
+import { DB } from '../services/db';
 
 interface QuestionnaireViewProps {
   packId: string;

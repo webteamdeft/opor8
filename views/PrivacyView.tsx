@@ -47,7 +47,7 @@ export const PrivacyView: React.FC = () => {
       content: [
         'End-to-end encryption for data in transit (TLS 1.3)',
         'AES-256 encryption for data at rest',
-        'Row Level Security (RLS) at database level',
+        'Row Level Security (RLS) at cloud database level',
         'Regular security audits and penetration testing',
         'Secure data centers with SOC 2 Type II certification',
         'Employee background checks and security training'
@@ -72,7 +72,7 @@ export const PrivacyView: React.FC = () => {
         'We do NOT sell your personal data to anyone',
         'AI processing: Google Gemini (no data retention)',
         'Payment processing: Stripe (PCI-DSS compliant)',
-        'Infrastructure: Supabase/AWS (encrypted storage)',
+        'Infrastructure: Enterprise Cloud (encrypted storage)',
         'Analytics: Anonymized usage data only',
         'Legal obligations: Only when required by law'
       ]

@@ -2,8 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Zap, Building2, Crown } from 'lucide-react';
 import { Button } from '../components/UI';
+import { DB } from '../services/db';
+import { User, Product } from '../types';
 
-export const PricingView: React.FC = () => {
+export const PricingView: React.FC<{ user?: User | null }> = ({ user }) => {
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
   React.useEffect(() => {
     document.title = 'Pricing - OPOR8 | Simple, Transparent Plans';
     const metaDescription = document.querySelector('meta[name="description"]');
@@ -15,64 +20,125 @@ export const PricingView: React.FC = () => {
       meta.content = 'OPOR8 pricing: Start free, upgrade when ready. $49 per SOP pack with unlimited documents. Enterprise plans available. No hidden fees, cancel anytime.';
       document.head.appendChild(meta);
     }
+
+    const fetchProducts = async () => {
+      try {
+        const response = await DB.payments.getProducts();
+        setProducts(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
   }, []);
 
-  const plans = [
+  const handleUpgrade = async (productId: string) => {
+    if (!user) {
+      window.location.href = '/auth';
+      return;
+    }
+
+    try {
+      const p = products.find(prod => prod._id === productId || prod.stripeProductId === productId);
+      const planId = p?.plan;
+
+      if (!planId) {
+        throw new Error('Plan identifier not found for this product');
+      }
+
+      const { url } = await DB.payments.createStripeSession(planId);
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Error initiating upgrade:', error);
+      alert('Failed to initiate payment. Please try again later.');
+    }
+  };
+
+
+  const getPlanIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('starter') || n.includes('basic')) return Zap;
+    if (n.includes('pro')) return Building2;
+    return Crown;
+  };
+
+  const getPlanGradient = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('starter') || n.includes('basic')) return 'from-slate-500 to-slate-600';
+    if (n.includes('pro')) return 'from-blue-500 to-indigo-600';
+    return 'from-amber-500 to-orange-600';
+  };
+
+  // Map fetched products to UI structure
+  const activeProducts = products.filter(p => p.isActive !== false);
+  const plans = activeProducts.length > 0 ? activeProducts.map(p => ({
+    id: p._id,
+    icon: getPlanIcon(p.name),
+    name: p.name,
+    price: p.amount ? `$${p.amount}` : (p.name.toLowerCase().includes('premium') ? '$99' : (p.name.toLowerCase().includes('pro') ? '$49' : '$19')),
+    period: p.billingType || (p.metadata?.type === 'subscription' ? 'month' : 'pack'),
+    description: p.description,
+    features: p.features && p.features.length > 0 ? p.features : (p.name.toLowerCase().includes('premium') ? [
+      '50 document generations',
+      'Everything in Pro',
+      'Advanced Compliance Audit',
+      'Custom API access'
+    ] : (p.name.toLowerCase().includes('pro') ? [
+      '10 document generations',
+      'All departments covered',
+      'Word & PDF export',
+      'Priority support'
+    ] : [
+      '1 document generation',
+      'Basic templates',
+      'Email support'
+    ])),
+    cta: user?.isPaid && p.name.toLowerCase().includes('pro') ? 'Current Plan' : (user ? 'Upgrade Now' : 'Get Started'),
+    popular: p.isPopular || p.name.toLowerCase().includes('pro'),
+    gradient: getPlanGradient(p.name),
+    isCurrent: user?.isPaid && p.name.toLowerCase().includes('pro')
+  })) : [
+    // Fallback if no products are fetched yet
     {
+      id: 'starter',
       icon: Zap,
       name: 'Starter',
       price: 'Free',
       period: 'forever',
       description: 'Perfect for trying out OPOR8 and creating your first SOPs',
-      features: [
-        '3 SOP documents',
-        'AI-powered generation',
-        'Basic templates',
-        'PDF export',
-        'Email support',
-        'Community access'
-      ],
-      cta: 'Start Free',
+      features: ['3 SOP documents', 'AI-powered generation', 'Basic templates', 'PDF export'],
+      cta: user ? 'Go to Dashboard' : 'Start Free',
       popular: false,
-      gradient: 'from-slate-500 to-slate-600'
+      gradient: 'from-slate-500 to-slate-600',
+      isCurrent: !user?.isPaid && user !== null
     },
     {
+      id: 'pro',
       icon: Building2,
       name: 'Professional',
       price: '$49',
       period: 'per pack',
       description: 'For growing teams that need comprehensive documentation',
-      features: [
-        'Unlimited documents',
-        'All departments covered',
-        'Advanced AI customization',
-        'Word & PDF export',
-        'Priority support',
-        'Brand customization',
-        'Version history',
-        'Team collaboration'
-      ],
-      cta: 'Get Started',
+      features: ['Unlimited documents', 'All departments covered', 'Advanced AI customization', 'Word & PDF export'],
+      cta: user?.isPaid ? 'Current Plan' : (user ? 'Upgrade Now' : 'Get Started'),
       popular: true,
-      gradient: 'from-blue-500 to-indigo-600'
+      gradient: 'from-blue-500 to-indigo-600',
+      isCurrent: user?.isPaid
     },
     {
+      id: 'enterprise',
       icon: Crown,
       name: 'Enterprise',
       price: 'Custom',
       period: 'contact sales',
       description: 'For large organizations with specific requirements',
-      features: [
-        'Everything in Professional',
-        'Unlimited users',
-        'Custom integrations',
-        'Dedicated account manager',
-        'SLA guarantee',
-        'Advanced security',
-        'Custom workflows',
-        'API access',
-        'Training & onboarding'
-      ],
+      features: ['Everything in Professional', 'Unlimited users', 'Custom integrations', 'Dedicated account manager'],
       cta: 'Contact Sales',
       popular: false,
       gradient: 'from-amber-500 to-orange-600'
@@ -91,12 +157,20 @@ export const PricingView: React.FC = () => {
               <span className="text-xl font-bold text-white">OPOR8</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Link to="/auth" className="text-slate-300 hover:text-white transition">
-                Sign In
-              </Link>
-              <Link to="/auth">
-                <Button>Get Started</Button>
-              </Link>
+              {!user ? (
+                <>
+                  <Link to="/auth" className="text-slate-300 hover:text-white transition">
+                    Sign In
+                  </Link>
+                  <Link to="/auth">
+                    <Button>Get Started</Button>
+                  </Link>
+                </>
+              ) : (
+                <Link to="/dashboard">
+                  <Button>Dashboard</Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -117,13 +191,17 @@ export const PricingView: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-20">
+          <div className="grid md:grid-cols-3 gap-8 mb-20 relative min-h-[400px]">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/20 backdrop-blur-sm z-10 rounded-3xl">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
             {plans.map((plan, index) => (
               <div
                 key={index}
-                className={`bg-slate-900/50 border ${
-                  plan.popular ? 'border-blue-500 shadow-2xl shadow-blue-500/20' : 'border-slate-800'
-                } rounded-2xl p-8 relative ${plan.popular ? 'transform scale-105' : ''}`}
+                className={`bg-slate-900/50 border ${plan.popular ? 'border-blue-500 shadow-2xl shadow-blue-500/20' : 'border-slate-800'
+                  } rounded-2xl p-8 relative flex flex-col ${plan.popular ? 'transform scale-105 z-1' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -138,7 +216,7 @@ export const PricingView: React.FC = () => {
                 </div>
 
                 <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-slate-400 mb-6">{plan.description}</p>
+                <p className="text-slate-400 mb-6 flex-grow">{plan.description}</p>
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2 mb-2">
@@ -149,18 +227,25 @@ export const PricingView: React.FC = () => {
                   </div>
                 </div>
 
-                <Link to={plan.name === 'Enterprise' ? '/contact' : '/auth'}>
-                  <Button
-                    className={`w-full mb-8 ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-                        : ''
-                    }`}
-                    variant={plan.popular ? 'primary' : 'secondary'}
-                  >
-                    {plan.cta}
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => {
+                    if (plan.id === 'enterprise' || plan.name.toLowerCase().includes('enterprise')) {
+                      window.location.href = '/contact';
+                    } else if (plan.id === 'starter' || plan.name.toLowerCase().includes('starter')) {
+                      window.location.href = user ? '/dashboard' : '/auth';
+                    } else {
+                      handleUpgrade(plan.id);
+                    }
+                  }}
+                  className={`w-full mb-8 ${plan.popular
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+                    : ''
+                    } ${plan.isCurrent ? 'opacity-50 cursor-default' : ''}`}
+                  variant={plan.popular ? 'primary' : 'secondary'}
+                  disabled={plan.isCurrent}
+                >
+                  {plan.cta}
+                </Button>
 
                 <ul className="space-y-4">
                   {plan.features.map((feature, idx) => (
@@ -246,9 +331,9 @@ export const PricingView: React.FC = () => {
               Join hundreds of companies using OPOR8 to standardize their operations.
               Start free today, no credit card required.
             </p>
-            <Link to="/auth">
+            <Link to={user ? '/dashboard' : '/auth'}>
               <Button variant="secondary" className="bg-white text-blue-600 hover:bg-blue-50">
-                Start Free Trial
+                {(user?.isPaid || user?.isPro) ? 'Go to Dashboard' : (user ? 'Upgrade Now' : 'Start Free Trial')}
               </Button>
             </Link>
           </div>

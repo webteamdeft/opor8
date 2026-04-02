@@ -81,7 +81,7 @@ export const FeaturesView: React.FC = () => {
     {
       icon: Cloud,
       title: 'Cloud-Native Architecture',
-      description: 'Built on modern cloud infrastructure with Supabase PostgreSQL, automatic backups, and real-time synchronization across all devices.',
+      description: 'Built on modern cloud infrastructure with Enterprise PostgreSQL, automatic backups, and real-time synchronization across all devices.',
       benefits: ['Auto backups', 'Real-time sync', 'Zero maintenance']
     },
     {

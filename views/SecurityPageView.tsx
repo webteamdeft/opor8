@@ -36,7 +36,7 @@ export const SecurityPageView: React.FC = () => {
     {
       icon: Server,
       title: 'Secure Infrastructure',
-      description: 'Hosted on Supabase cloud infrastructure with automatic backups, 99.9% uptime SLA, and DDoS protection.'
+      description: 'Hosted on enterprise-grade cloud infrastructure with automatic backups, 99.9% uptime SLA, and DDoS protection.'
     },
     {
       icon: FileCheck,
@@ -230,7 +230,7 @@ export const SecurityPageView: React.FC = () => {
               {[
                 {
                   q: 'Where is my data stored?',
-                  a: 'Your data is stored in Supabase-managed PostgreSQL databases hosted on AWS infrastructure. You can choose your preferred region during signup.'
+                  a: 'Your data is stored in enterprise-tier PostgreSQL databases hosted on secure cloud infrastructure. You can choose your preferred region during signup.'
                 },
                 {
                   q: 'Who can access my documents?',

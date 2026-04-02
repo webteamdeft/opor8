@@ -35,6 +35,7 @@ export interface User {
   email: string;
   role: Role;
   isPaid: boolean;
+  isPro: boolean;
   emailVerified: boolean;
   createdAt?: string;
 }
@@ -79,6 +80,15 @@ export interface BusinessProfile {
   country: string;
   tone: string;
   logoUrl?: string;
+  // Additional fields for API
+  fullName?: string;
+  dob?: string;
+  gender?: string;
+  businessName?: string;
+  industryType?: string;
+  complianceTone?: string;
+  primaryExportFormat?: string;
+  brandingLogo?: string;
 }
 
 export interface SOPDocument {
@@ -90,6 +100,9 @@ export interface SOPDocument {
   lastUpdated: string;
   isSample: boolean;
   version: string;
+  pdfUrl?: string;
+  docxUrl?: string;
+  deploymentStatus?: string;
 }
 
 export interface SOPPack {
@@ -128,3 +141,53 @@ export interface SupportTicket {
   status: 'Open' | 'Closed';
   createdAt: string;
 }
+
+export interface Transaction {
+  _id: string;
+  userId: string;
+  subscriptionType: string;
+  validUpTo: string | null;
+  transactionId: string;
+  purchaseDevice: string;
+  amount: number;
+  productId: string;
+  isCancelRenew: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    list: Transaction[];
+    pagination: {
+      totalCount: number;
+      nextPage: number;
+      prevPage: number;
+      currentPage: number;
+    }
+  }
+}
+
+export interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  plan: string;
+  documentGenerateLimit: number;
+  features: string[];
+  isPopular: boolean;
+  billingType: string;
+  stripeProductId?: string;
+  stripePriceId?: string;
+  metadata?: {
+    type: string;
+  };
+  isActive?: boolean;
+  createdAt?: string;
+}
+

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '../types';
 import { authService } from '../services/auth';
-import { DB } from '../services/dbSupabase';
+import { DB } from '../services/db';
 import { Button, Input } from '../components/UI';
 
 interface AuthViewProps {
@@ -34,7 +34,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin, onBack }) => {
         const user = await authService.signIn(email, password);
         onLogin(user);
         const profile = await DB.profiles.getByUser(user.id);
-        if (profile) {
+        if (profile && profile.name && profile.industry) {
           navigate('/dashboard');
         } else {
           navigate('/onboarding');
@@ -69,7 +69,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin, onBack }) => {
           <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-3">{isLogin ? 'Welcome back' : 'Create Account'}</h2>
           <p className="text-slate-500 font-medium">{isLogin ? 'Enter your email for access' : 'Start your SOP journey for free'}</p>
         </div>
-        
+
         <div className="space-y-6">
           {!isLogin && (
             <Input

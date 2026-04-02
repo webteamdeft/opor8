@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![AI-Engine](https://img.shields.io/badge/AI-Gemini_3_Pro-violet)
 ![React](https://img.shields.io/badge/React-19-blue)
-![Supabase](https://img.shields.io/badge/Database-Supabase-green)
+![Supabase](https://img.shields.io/badge/Database-PostgreSQL-green)
 
 A modern SaaS platform that generates professional Standard Operating Procedures (SOPs) using AI. Built for enterprise teams who need standardized documentation across departments.
 
@@ -32,7 +32,7 @@ A modern SaaS platform that generates professional Standard Operating Procedures
 ### Prerequisites
 
 - Node.js 18+ and npm
-- A Supabase account (free tier works)
+- Access to the custom API endpoint (http://1.6.98.142:8800/api/v1)
 - Google Gemini API key (optional for AI features)
 
 ### Installation
@@ -61,10 +61,7 @@ npm run build
    - Complete the onboarding flow
 
 2. **Grant Admin Access (Optional)**
-   ```sql
-   -- Run this in Supabase SQL Editor
-   UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
-   ```
+   - Use the internal API or database management tool to set the `role` field to `admin` for your account.
 
 3. **Add Gemini API Key**
    - Get your key from [Google AI Studio](https://makersuite.google.com/app/apikey)
@@ -83,10 +80,10 @@ npm run build
 - **Vite** - Lightning-fast build tool
 
 ### Backend & Services
-- **Supabase** - PostgreSQL database with realtime
-- **Supabase Auth** - Email/password authentication
+- **Custom API** - Node.js/Express backend (http://1.6.98.142:8800)
+- **PostgreSQL** - Relational database
+- **JWT Auth** - Token-based authentication
 - **Google Gemini AI** - Document generation
-- **Row Level Security (RLS)** - Database-level authorization
 
 ### Development Tools
 - **TypeScript 5.3** - Full type coverage
@@ -119,11 +116,9 @@ opor8-app/
 │
 ├── services/                    # Business logic & API clients
 │   ├── ai.ts                   # Gemini AI integration
+│   ├── api.ts                  # Base API client (fetch wrapper)
 │   ├── auth.ts                 # Authentication helpers
-│   ├── db.ts                   # Legacy LocalStorage DB (to be removed)
-│   ├── dbSupabase.ts           # Supabase database operations
-│   ├── supabase.ts             # Supabase client initialization
-│   ├── database.types.ts       # Auto-generated Supabase types
+│   ├── db.ts                   # Custom API database operations
 │   └── initialData.ts          # Sample/seed data
 │
 ├── views/                       # Page components
@@ -163,7 +158,7 @@ opor8-app/
 ### Authentication Flow
 
 ```
-User → AuthView → Supabase Auth → Session Created
+User → AuthView → Custom API Auth → JWT Token Created
                                   ↓
                             User Record in DB
                                   ↓
@@ -172,7 +167,7 @@ User → AuthView → Supabase Auth → Session Created
 
 **Key Files:**
 - `services/auth.ts` - Auth helper functions
-- `services/supabase.ts` - Supabase client
+- `services/api.ts` - Base API client
 - `views/AuthView.tsx` - Login/signup UI
 - `components/RoleGuard.tsx` - Route protection
 
@@ -202,7 +197,7 @@ User → AuthView → Supabase Auth → Session Created
 
 ### Database Architecture
 
-The app uses **Supabase (PostgreSQL)** with Row Level Security (RLS):
+The app uses a **PostgreSQL** database accessed via the custom API:
 
 **Core Tables:**
 - `users` - User accounts with roles (user/support/admin)
@@ -217,19 +212,17 @@ The app uses **Supabase (PostgreSQL)** with Row Level Security (RLS):
 - `global_config` - System-wide settings
 
 **Security Model:**
-- Users can only access their own data
-- Admins can access all data
-- Help articles are public to authenticated users
-- Sample documents visible to everyone
+- Token-based authentication (JWT)
+- Role-Based Access Control (RBAC)
+- All document access validated by the API
 
 ### State Management
 
-The app uses **React local state** and **Supabase realtime subscriptions**:
+The app uses **React local state** and **centralized API services**:
 
 - Component-level state with `useState`
-- Data fetching with `useEffect`
-- No global state library (Redux/Zustand) - keeping it simple
-- Realtime updates via Supabase subscriptions (chat, notifications)
+- Data fetching with `useEffect` via `DB` service
+- Authentication state managed in `App.tsx`
 
 ---
 
@@ -334,8 +327,8 @@ Currently uses placeholder Stripe integration. Complete:
 ```bash
 # Will need to create: supabase/functions/stripe-webhook/index.ts
 ```
-3. Update `STRIPE_SECRET_KEY` in Supabase Edge Function secrets
-4. Update frontend `BillingView.tsx` to use Stripe Checkout
+3. Update `STRIPE_SECRET_KEY` in API environment
+4. Update frontend `BillingView.tsx` to use handleUpgrade logic
 
 #### 5. Email Notifications
 **Priority: MEDIUM**
@@ -733,7 +726,7 @@ export interface MyTable {
 
 5. **Add service functions**
 ```typescript
-// services/dbSupabase.ts
+// services/db.ts
 export async function getMyTableData(): Promise<MyTable[]> {
   const { data, error } = await supabase
     .from('my_table')
