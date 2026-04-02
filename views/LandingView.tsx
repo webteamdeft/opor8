@@ -7,7 +7,7 @@ export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   const [activeTab, setActiveTab] = useState('Operations');
   const [activeStep, setActiveStep] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-
+const [menuOpen, setMenuOpen] = useState(false);
   // Refs for scroll tracking in How It Works
   const stepRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
 
@@ -113,31 +113,71 @@ export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
   return (
     <div className="bg-white selection:bg-indigo-100 selection:text-indigo-900 min-h-screen font-sans overflow-x-hidden">
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 px-8 py-4 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100' : 'bg-transparent'}`}>
-        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-200">O</div>
-          <span className="text-2xl font-black tracking-tighter text-slate-900 uppercase">OPOR8</span>
-        </div>
-        <div className="hidden md:flex items-center space-x-8">
-          <button onClick={() => scrollTo(howItWorksRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600 transition-colors">How it works</button>
-          <button onClick={() => scrollTo(pricingRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600 transition-colors">Pricing</button>
-          <button
-            onClick={onStart}
-            className={`px-6 py-2.5 bg-indigo-600 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transition-all active:scale-95 ${scrolled ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2 pointer-events-none'}`}
-          >
-            Get Started Free
-          </button>
-        </div>
-      </nav>
+    <nav className={`fixed top-0 w-full z-50 px-4 sm:px-8 py-4 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100' : 'bg-transparent'}`}>
+
+  {/* Logo */}
+  <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-200">O</div>
+    <span className="text-2xl font-black tracking-tighter text-slate-900 uppercase">OPOR8</span>
+  </div>
+
+  {/* Desktop Menu */}
+  <div className="hidden md:flex items-center space-x-8">
+    <button onClick={() => scrollTo(howItWorksRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600">How it works</button>
+    <button onClick={() => scrollTo(pricingRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600">Pricing</button>
+
+    <button
+      onClick={onStart}
+      className={`px-6 py-2.5 bg-indigo-600 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+    >
+      Get Started Free
+    </button>
+  </div>
+
+<div className='bg-indigo-600 p-2 md:hidden rounded-xl text-white'>
+  <button
+    className="md:hidden flex items-center"
+    onClick={() => setMenuOpen(!menuOpen)}
+  >
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {menuOpen ? (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      )}
+    </svg>
+  </button>
+  </div>
+</nav>
+{menuOpen && (
+  <div className="md:hidden transition-all duration-300 ease-in-out fixed top-[70px] left-0 w-full bg-white shadow-md border-t p-4 flex flex-col gap-4 z-40">
+
+    <button onClick={() => { scrollTo(howItWorksRef); setMenuOpen(false); }} className="text-sm text-slate-700 font-bold uppercase">
+      How it works
+    </button>
+
+    <button onClick={() => { scrollTo(pricingRef); setMenuOpen(false); }} className="text-sm text-slate-700 font-bold uppercase">
+      Pricing
+    </button>
+
+    <button
+      onClick={() => { onStart(); setMenuOpen(false); }}
+      className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold text-sm"
+    >
+      Get Started Free
+    </button>
+
+  </div>
+)}
 
       {/* Hero Section */}
-      <section className="pt-48 pb-24 px-8 overflow-hidden reveal">
+      <section className="pt-40 pb-24 px-8 overflow-hidden reveal">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div className="text-left">
             <div className="stagger-item inline-flex items-center px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 font-black text-[10px] uppercase tracking-[0.25em] mb-8 border border-indigo-100">
               AI SOP Generator for Modern Teams
             </div>
-            <h1 className="stagger-item text-6xl md:text-8xl font-black text-slate-900 tracking-tight leading-[0.85] mb-10">
+            <h1 className="stagger-item text-5xl md:text-8xl font-black text-slate-900 tracking-tight leading-[0.85] mb-10">
               Build SOPs. <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-500 italic font-serif">Paperless.</span>
             </h1>
@@ -251,7 +291,7 @@ export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             { title: 'Structured, consistent, editable', desc: 'No more messy formatting. Consistent sections across every department module.' },
             { title: 'Ready to train and audit', desc: 'Exportable documents ready for employee onboarding or ISO-level compliance checks.' }
           ].map((item, i) => (
-            <div key={i} className="stagger-item bg-white p-12 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-2 cursor-default group">
+            <div key={i} className="stagger-item bg-white p-6 sm:p-12 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-2 cursor-default group">
               <div className="w-14 h-14 bg-indigo-600 rounded-2xl mb-8 flex items-center justify-center text-white text-2xl font-bold group-hover:scale-110 transition-transform">{i + 1}</div>
               <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{item.title}</h3>
               <p className="text-slate-500 font-medium leading-relaxed">{item.desc}</p>
@@ -332,7 +372,7 @@ export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
           <div className="mt-16 relative">
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
               {/* Browser Chrome */}
-              <div className="h-12 bg-slate-900 flex items-center px-6 justify-between border-b border-white/10">
+              <div className="h-12 bg-slate-900 gap-4 flex items-center px-6 justify-between border-b border-white/10">
                 <div className="flex gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
                   <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
@@ -349,7 +389,7 @@ export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                 {/* Step 0: Contextualize */}
                 {activeStep === 0 && (
                   <div className="w-full max-w-lg animate-fadeIn">
-                    <div className="flex items-center justify-center gap-8 mb-12">
+                    <div className="flex items-center flex-wrap justify-center gap-4 sm:gap-8 mb-12">
                       {['📈 Sales', '⚙️ Operations', '👥 HR'].map((dept, idx) => (
                         <div
                           key={idx}
@@ -462,14 +502,14 @@ export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
 
       {/* Department Grid - High Contrast Brand Scheme */}
       <section className="py-32 bg-slate-950 text-white rounded-[4rem] mx-8 mb-32 border border-white/5 reveal">
-        <div className="max-w-7xl mx-auto px-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-10">
           <div className="text-center mb-24">
             <h2 className="stagger-item text-4xl md:text-5xl font-black tracking-tight mb-6 uppercase">SOPs for every team.</h2>
             <p className="stagger-item text-slate-500 text-xl font-medium">Standardize the core procedures that run your business nodes.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {departments.map(dept => (
-              <div key={dept.id} className={`${dept.bg} ${dept.border} stagger-item p-10 rounded-[3rem] transition-all duration-500 group hover:scale-[1.03] hover:shadow-2xl hover:shadow-black/50 border flex flex-col justify-between h-80 relative overflow-hidden`}>
+              <div key={dept.id} className={`${dept.bg} ${dept.border} stagger-item p-6 sm:p-10 rounded-[3rem] transition-all duration-500 group hover:scale-[1.03] hover:shadow-2xl hover:shadow-black/50 border flex flex-col justify-between h-80 relative overflow-hidden`}>
                 <div className="relative z-10">
                   <div className="flex items-center gap-4 mb-8">
                     <span className="text-4xl bg-white/10 w-16 h-16 rounded-2xl flex items-center justify-center border border-white/10 group-hover:bg-white group-hover:text-black transition-all duration-500">{dept.icon}</span>

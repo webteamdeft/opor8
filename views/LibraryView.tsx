@@ -55,17 +55,17 @@ export const LibraryView: React.FC<{ user: User, onOpenDoc: (d: SOPDocument) => 
   };
 
   return (
-    <div className="p-10 max-w-7xl mx-auto space-y-12 font-sans">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-auto mx-auto space-y-8 sm:space-y-10 lg:space-y-12 font-sans">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-4 uppercase">SOP Document Repository</h1>
-          <p className="text-xl text-slate-500 font-medium leading-none">Your secure <strong>process documentation</strong> library and export center.</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-none mb-3 sm:mb-4 uppercase">SOP Document Repository</h1>
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-500 font-medium leading-tight sm:leading-none">Your secure <strong>process documentation</strong> library and export center.</p>
         </div>
         {docs.length > 0 && (
           <button
             onClick={handleExportAll}
             disabled={isExporting}
-            className={`px-8 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 ${!(user.isPaid || user.isPro) ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200'}`}
+            className={`px-5 py-3 sm:px-6 sm:py-3.5 md:px-8 md:py-4 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base md:text-lg transition-all flex items-center justify-center gap-2 sm:gap-3 shadow-xl active:scale-95 disabled:opacity-50 ${!(user.isPaid || user.isPro) ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200'}`}
           >
             {isExporting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -81,22 +81,22 @@ export const LibraryView: React.FC<{ user: User, onOpenDoc: (d: SOPDocument) => 
           <button
             key={d}
             onClick={() => setFilter(d)}
-            className={`px-6 py-3 rounded-2xl text-sm font-black whitespace-nowrap transition-all border-2 ${filter === d ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+            className={`px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap transition-all border-2 ${filter === d ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
           >
             {d}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-xl overflow-hidden relative">
-        <table className="w-full text-left">
+      <div className="bg-white rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3.5rem] border border-slate-200 shadow-xl overflow-x-auto relative custom-scrollbar">
+        <table className="w-full text-left min-w-[800px] md:min-w-full">
           <thead className="bg-slate-50/80 backdrop-blur-md border-b">
             <tr className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
-              <th className="px-10 py-6">Procedural Title</th>
-              <th className="px-10 py-6">Business Vertical</th>
-              <th className="px-10 py-6">Deployment Status</th>
-              <th className="px-10 py-6">Last Synthesis</th>
-              <th className="px-10 py-6 text-right">Downloads</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6">Procedural Title</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6">Business Vertical</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6">Deployment Status</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6">Last Synthesis</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6 text-right">Downloads</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -104,26 +104,26 @@ export const LibraryView: React.FC<{ user: User, onOpenDoc: (d: SOPDocument) => 
               <tr key={i} className="hover:bg-indigo-50/30 transition-all group">
                 <td
                   onClick={() => onOpenDoc(d)}
-                  className="px-10 py-6 font-bold text-slate-900 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all cursor-pointer"
+                  className="px-6 py-4 lg:px-10 lg:py-6 font-bold text-slate-900 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-lg border border-slate-100 group-hover:bg-white transition-colors">📄</div>
                     {d.title}
                   </div>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-6 py-4 lg:px-10 lg:py-6">
                   <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500">{d.department}</span>
                 </td>
-                <td className="px-10 py-6">
+                <td className="px-6 py-4 lg:px-10 lg:py-6">
                   <div className="flex items-center text-emerald-600 text-[10px] font-black uppercase tracking-widest">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>
                     {d.deploymentStatus || 'Live & Audit-Ready'}
                   </div>
                 </td>
-                <td className="px-10 py-6 text-sm font-bold text-slate-400">
+                <td className="px-6 py-4 lg:px-10 lg:py-6 text-sm font-bold text-slate-400">
                   {d.lastUpdated}
                 </td>
-                <td className="px-10 py-6 text-right">
+                <td className="px-6 py-4 lg:px-10 lg:py-6 text-right">
                   <div className="flex items-center justify-end gap-2">
                     {d.pdfUrl && d.pdfUrl !== 'undefined' ? (
                       <a
@@ -167,10 +167,10 @@ export const LibraryView: React.FC<{ user: User, onOpenDoc: (d: SOPDocument) => 
           </div>
         )}
         {filteredDocs.length === 0 && (
-          <div className="p-32 text-center">
-            <div className="text-6xl mb-6 grayscale opacity-30">📂</div>
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Inventory Empty</h3>
-            <p className="text-slate-500 font-medium">No <strong>business SOP software</strong> files found. Launch the builder to create automated SOP templates.</p>
+          <div className="p-12 sm:p-20 md:p-32 text-center">
+            <div className="text-4xl sm:text-5xl md:text-6xl mb-4 sm:mb-6 grayscale opacity-30">📂</div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">Inventory Empty</h3>
+            <p className="text-sm sm:text-base text-slate-500 font-medium">No <strong>business SOP software</strong> files found. Launch the builder to create automated SOP templates.</p>
           </div>
         )}
       </div>

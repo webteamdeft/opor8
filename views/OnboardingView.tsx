@@ -1,8 +1,7 @@
-
-import React, { useState, useRef, useEffect } from 'react';
-import { BusinessProfile } from '../types';
-import { Button, Input } from '../components/UI';
-import { api } from '../services/api';
+import React, { useState, useRef, useEffect } from "react";
+import { BusinessProfile } from "../types";
+import { Button, Input } from "../components/UI";
+import { api } from "../services/api";
 
 interface OnboardingViewProps {
   userId: string;
@@ -11,7 +10,12 @@ interface OnboardingViewProps {
   onComplete: (p: BusinessProfile) => void;
 }
 
-export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile, setProfile, onComplete }) => {
+export const OnboardingView: React.FC<OnboardingViewProps> = ({
+  userId,
+  profile,
+  setProfile,
+  onComplete,
+}) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +27,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
     const fetchProfileData = async () => {
       try {
         setFetchingProfile(true);
-        const response = await api.get('/user/profile');
+        const response = await api.get("/user/profile");
         const data = response.data || response;
         const profileData = data.profile || data.businessProfile || data;
 
@@ -31,25 +35,66 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
         if (profileData) {
           const updatedProfile: BusinessProfile = {
             userId: userId,
-            name: profileData.businessName || profileData.name || profile.name || '',
-            industry: profileData.industryType || profileData.industry || profile.industry || '',
-            size: profileData.size || profile.size || '',
-            country: profileData.country || profile.country || '',
-            tone: profileData.complianceTone || profileData.tone || profile.tone || 'Professional',
-            logoUrl: profileData.brandingLogo || profileData.logoUrl || profileData.logo_url || profile.logoUrl || '',
-            fullName: profileData.fullName || profile.fullName || '',
-            dob: profileData.dob || profile.dob || '',
-            gender: profileData.gender || profile.gender || '',
-            businessName: profileData.businessName || profileData.name || profile.businessName || profile.name || '',
-            industryType: profileData.industryType || profileData.industry || profile.industryType || profile.industry || '',
-            complianceTone: profileData.complianceTone || profileData.tone || profile.complianceTone || profile.tone || 'Professional',
-            primaryExportFormat: profileData.primaryExportFormat || profile.primaryExportFormat || 'PDF',
-            brandingLogo: profileData.brandingLogo || profileData.logoUrl || profileData.logo_url || profile.brandingLogo || profile.logoUrl || ''
+            name:
+              profileData.businessName ||
+              profileData.name ||
+              profile.name ||
+              "",
+            industry:
+              profileData.industryType ||
+              profileData.industry ||
+              profile.industry ||
+              "",
+            size: profileData.size || profile.size || "",
+            country: profileData.country || profile.country || "",
+            tone:
+              profileData.complianceTone ||
+              profileData.tone ||
+              profile.tone ||
+              "Professional",
+            logoUrl:
+              profileData.brandingLogo ||
+              profileData.logoUrl ||
+              profileData.logo_url ||
+              profile.logoUrl ||
+              "",
+            fullName: profileData.fullName || profile.fullName || "",
+            dob: profileData.dob || profile.dob || "",
+            gender: profileData.gender || profile.gender || "",
+            businessName:
+              profileData.businessName ||
+              profileData.name ||
+              profile.businessName ||
+              profile.name ||
+              "",
+            industryType:
+              profileData.industryType ||
+              profileData.industry ||
+              profile.industryType ||
+              profile.industry ||
+              "",
+            complianceTone:
+              profileData.complianceTone ||
+              profileData.tone ||
+              profile.complianceTone ||
+              profile.tone ||
+              "Professional",
+            primaryExportFormat:
+              profileData.primaryExportFormat ||
+              profile.primaryExportFormat ||
+              "PDF",
+            brandingLogo:
+              profileData.brandingLogo ||
+              profileData.logoUrl ||
+              profileData.logo_url ||
+              profile.brandingLogo ||
+              profile.logoUrl ||
+              "",
           };
           setProfile(updatedProfile);
         }
       } catch (err) {
-        console.warn('[OnboardingView] Failed to fetch profile data:', err);
+        console.warn("[OnboardingView] Failed to fetch profile data:", err);
         // Don't show error to user, just continue with empty form
       } finally {
         setFetchingProfile(false);
@@ -69,8 +114,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        updateProfile('logoUrl', base64String);
-        updateProfile('brandingLogo', base64String);
+        updateProfile("logoUrl", base64String);
+        updateProfile("brandingLogo", base64String);
       };
       reader.readAsDataURL(file);
     }
@@ -84,17 +129,18 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
       // Prepare the payload for the API
       const payload = {
         fullName: profile.fullName || profile.name,
-        dob: profile.dob || '',
-        gender: profile.gender || '',
+        dob: profile.dob || "",
+        gender: profile.gender || "",
         businessName: profile.businessName || profile.name,
         industryType: profile.industryType || profile.industry,
-        complianceTone: profile.complianceTone || profile.tone || 'Professional',
-        primaryExportFormat: profile.primaryExportFormat || 'PDF',
-        brandingLogo: profile.brandingLogo || profile.logoUrl || ''
+        complianceTone:
+          profile.complianceTone || profile.tone || "Professional",
+        primaryExportFormat: profile.primaryExportFormat || "PDF",
+        brandingLogo: profile.brandingLogo || profile.logoUrl || "",
       };
 
       // Call the profile update API
-      await api.put('/user/profile', payload);
+      await api.put("/user/profile", payload);
 
       // Update local profile state
       const updatedProfile = {
@@ -102,14 +148,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
         ...payload,
         name: payload.businessName,
         industry: payload.industryType,
-        tone: payload.complianceTone
+        tone: payload.complianceTone,
       };
 
       setProfile(updatedProfile);
       onComplete(updatedProfile);
     } catch (err: any) {
-      console.error('Profile update error:', err);
-      setError(err.message || 'Failed to update profile. Please try again.');
+      console.error("Profile update error:", err);
+      setError(err.message || "Failed to update profile. Please try again.");
       setLoading(false);
     }
   };
@@ -122,26 +168,32 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center flex-1 last:flex-none">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm transition-all duration-500 ${step >= i ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-300 border-2 border-slate-100'
-                  }`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm transition-all duration-500 ${
+                  step >= i
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100"
+                    : "bg-white text-slate-300 border-2 border-slate-100"
+                }`}
               >
                 {i}
               </div>
               {i < 3 && (
                 <div
-                  className={`h-1 flex-1 mx-4 rounded-full transition-all duration-500 ${step > i ? 'bg-indigo-600' : 'bg-slate-200'
-                    }`}
+                  className={`h-1 flex-1 mx-4 rounded-full transition-all duration-500 ${
+                    step > i ? "bg-indigo-600" : "bg-slate-200"
+                  }`}
                 />
               )}
             </div>
           ))}
         </div>
 
-        <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl border border-slate-200/50 relative overflow-hidden">
+        <div className="bg-white sm:p-12 p-6 sm:rounded-[3.5rem] rounded-[2rem] shadow-2xl border border-slate-200/50 relative overflow-hidden">
           {fetchingProfile ? (
             <div className="relative z-10 space-y-8 text-center py-12">
               <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto"></div>
-              <p className="text-slate-500 font-medium">Loading your profile...</p>
+              <p className="text-slate-500 font-medium">
+                Loading your profile...
+              </p>
             </div>
           ) : (
             <div className="relative z-10 space-y-8">
@@ -149,40 +201,54 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
               {step === 1 && (
                 <div className="animate-fadeIn space-y-8">
                   <div className="space-y-2">
-                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">Personal Info</h2>
-                    <p className="text-slate-500 font-medium">Tell us about yourself.</p>
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">
+                      Personal Info
+                    </h2>
+                    <p className="text-slate-500 font-medium">
+                      Tell us about yourself.
+                    </p>
                   </div>
 
                   <div className="space-y-6">
                     <Input
                       label="Full Name"
-                      value={profile.fullName || ''}
-                      onChange={(e) => updateProfile('fullName', e.target.value)}
+                      value={profile.fullName || ""}
+                      onChange={(e) =>
+                        updateProfile("fullName", e.target.value)
+                      }
                       placeholder="e.g. John Doe"
                     />
 
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Date of Birth</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Date of Birth
+                      </label>
                       <input
                         type="date"
-                        value={profile.dob || ''}
-                        onChange={(e) => updateProfile('dob', e.target.value)}
+                        value={profile.dob || ""}
+                        onChange={(e) => updateProfile("dob", e.target.value)}
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50/50 outline-none focus:border-indigo-600 focus:bg-white transition-all font-bold"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Gender</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Gender
+                      </label>
                       <select
-                        value={profile.gender || ''}
-                        onChange={(e) => updateProfile('gender', e.target.value)}
+                        value={profile.gender || ""}
+                        onChange={(e) =>
+                          updateProfile("gender", e.target.value)
+                        }
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50/50 outline-none focus:border-indigo-600 focus:bg-white transition-all font-bold"
                       >
                         <option value="">Select Gender...</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
+                        <option value="Prefer not to say">
+                          Prefer not to say
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -202,28 +268,34 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
               {step === 2 && (
                 <div className="animate-fadeIn space-y-8">
                   <div className="space-y-2">
-                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">Business Identity</h2>
-                    <p className="text-slate-500 font-medium">Tell us about your organization.</p>
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">
+                      Business Identity
+                    </h2>
+                    <p className="text-slate-500 font-medium">
+                      Tell us about your organization.
+                    </p>
                   </div>
 
                   <div className="space-y-6">
                     <Input
                       label="Business Name"
-                      value={profile.businessName || profile.name || ''}
+                      value={profile.businessName || profile.name || ""}
                       onChange={(e) => {
-                        updateProfile('businessName', e.target.value);
-                        updateProfile('name', e.target.value);
+                        updateProfile("businessName", e.target.value);
+                        updateProfile("name", e.target.value);
                       }}
                       placeholder="e.g. Acme Corporation"
                     />
 
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Industry Type</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Industry Type
+                      </label>
                       <select
-                        value={profile.industryType || profile.industry || ''}
+                        value={profile.industryType || profile.industry || ""}
                         onChange={(e) => {
-                          updateProfile('industryType', e.target.value);
-                          updateProfile('industry', e.target.value);
+                          updateProfile("industryType", e.target.value);
+                          updateProfile("industry", e.target.value);
                         }}
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50/50 outline-none focus:border-indigo-600 focus:bg-white transition-all font-bold"
                       >
@@ -240,12 +312,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Compliance Tone</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Compliance Tone
+                      </label>
                       <select
-                        value={profile.complianceTone || profile.tone || ''}
+                        value={profile.complianceTone || profile.tone || ""}
                         onChange={(e) => {
-                          updateProfile('complianceTone', e.target.value);
-                          updateProfile('tone', e.target.value);
+                          updateProfile("complianceTone", e.target.value);
+                          updateProfile("tone", e.target.value);
                         }}
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50/50 outline-none focus:border-indigo-600 focus:bg-white transition-all font-bold"
                       >
@@ -258,10 +332,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Primary Export Format</label>
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Primary Export Format
+                      </label>
                       <select
-                        value={profile.primaryExportFormat || 'PDF'}
-                        onChange={(e) => updateProfile('primaryExportFormat', e.target.value)}
+                        value={profile.primaryExportFormat || "PDF"}
+                        onChange={(e) =>
+                          updateProfile("primaryExportFormat", e.target.value)
+                        }
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50/50 outline-none focus:border-indigo-600 focus:bg-white transition-all font-bold"
                       >
                         <option value="PDF">PDF</option>
@@ -272,7 +350,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2  gap-4">
                     <Button
                       variant="outline"
                       size="lg"
@@ -295,8 +373,12 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
               {step === 3 && (
                 <div className="animate-fadeIn space-y-8 text-center">
                   <div className="space-y-2">
-                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">Branding</h2>
-                    <p className="text-slate-500 font-medium">Upload your logo to personalize your SOPs.</p>
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">
+                      Branding
+                    </h2>
+                    <p className="text-slate-500 font-medium">
+                      Upload your logo to personalize your SOPs.
+                    </p>
                   </div>
 
                   {error && (
@@ -307,26 +389,50 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
 
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className={`w-48 h-48 border-4 border-dashed mx-auto flex items-center justify-center cursor-pointer rounded-[2.5rem] transition-all duration-300 hover:border-indigo-400 hover:bg-slate-50 relative group overflow-hidden ${profile.logoUrl || profile.brandingLogo ? 'border-transparent' : 'border-slate-100 bg-slate-50/30'
-                      }`}
+                    className={`w-48 h-48 border-4 border-dashed mx-auto flex items-center justify-center cursor-pointer rounded-[2.5rem] transition-all duration-300 hover:border-indigo-400 hover:bg-slate-50 relative group overflow-hidden ${
+                      profile.logoUrl || profile.brandingLogo
+                        ? "border-transparent"
+                        : "border-slate-100 bg-slate-50/30"
+                    }`}
                   >
-                    {(profile.logoUrl || profile.brandingLogo) ? (
+                    {profile.logoUrl || profile.brandingLogo ? (
                       <>
-                        <img src={profile.logoUrl || profile.brandingLogo} className="max-h-full max-w-full object-contain p-4" />
+                        <img
+                          src={
+                            profile.logoUrl ||
+                            profile.brandingLogo ||
+                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHg_rM60_sGCMABjAOF4B9WhWvV6vrEMwcag&s"
+                          }
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHg_rM60_sGCMABjAOF4B9WhWvV6vrEMwcag&s";
+                          }}
+                          className="h-40 w-40 border-2 border-slate-100 object-cover rounded-full p-4"
+                        />
                         <div className="absolute inset-0 bg-indigo-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <span className="text-white font-black text-xs uppercase tracking-widest">Change Logo</span>
+                          <span className="text-white font-black text-xs uppercase tracking-widest">
+                            Change Logo
+                          </span>
                         </div>
                       </>
                     ) : (
                       <div className="text-center space-y-2">
                         <div className="text-4xl">📸</div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Logo</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          Upload Logo
+                        </span>
                       </div>
                     )}
-                    <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
                       variant="outline"
                       size="lg"
@@ -340,7 +446,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ userId, profile,
                       onClick={handleComplete}
                       disabled={loading}
                     >
-                      {loading ? 'Saving...' : 'Complete'}
+                      {loading ? "Saving..." : "Complete"}
                     </Button>
                   </div>
                 </div>

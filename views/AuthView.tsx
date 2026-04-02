@@ -59,7 +59,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin, onBack }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans">
-      <div className="max-w-md w-full bg-white rounded-[3.5rem] shadow-2xl p-12 border border-slate-200/50 relative overflow-hidden">
+      <div className="max-w-md w-full bg-white rounded-[3.5rem] shadow-2xl p-6 sm:p-12 border border-slate-200/50 relative overflow-hidden">
         <button onClick={onBack} className="absolute top-10 left-10 text-slate-400 hover:text-slate-600 transition-colors">
           <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
         </button>

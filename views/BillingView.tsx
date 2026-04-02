@@ -79,29 +79,29 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
   };
 
   return (
-    <div className="p-10 max-w-5xl mx-auto space-y-12 font-sans">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-auto mx-auto space-y-8 sm:space-y-10 lg:space-y-12 font-sans">
       <div>
-        <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-4">Billing</h1>
-        <p className="text-lg text-slate-500 font-medium">Manage your subscription, invoices, and pack entitlements.</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-none mb-3 sm:mb-4">Billing</h1>
+        <p className="text-sm sm:text-base md:text-lg text-slate-500 font-medium">Manage your subscription, invoices, and pack entitlements.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm relative overflow-hidden min-h-[300px]">
-            <div className="flex justify-between items-start mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 sm:gap-4 lg:gap-10">
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+          <div className="bg-white p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3.5rem] border border-slate-200 shadow-sm relative overflow-hidden min-h-[auto] md:min-h-[300px]">
+            <div className="flex flex-col md:flex-row flex-wrap justify-between items-start gap-6 mb-8">
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-4">Active Plan</p>
-                <h3 className="text-4xl font-black text-slate-900 flex items-center gap-3">
+                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 flex flex-wrap items-center gap-2 sm:gap-3">
                   {user.isPaid ? 'Professional Pack' : 'Free Preview'}
-                  {user.isPaid && <span className="text-[10px] px-3 py-1 bg-indigo-600 text-white rounded-full uppercase tracking-widest font-black">Active</span>}
+                  {user.isPaid && <span className="text-[9px] sm:text-[10px] px-2.5 py-0.5 sm:px-3 sm:py-1 bg-indigo-600 text-white rounded-full uppercase tracking-widest font-black shrink-0">Active</span>}
                 </h3>
               </div>
               {user.isPaid && (
-                <button className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all">Download All Invoices</button>
+                <button className="w-full md:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm hover:bg-slate-800 transition-all">Download All Invoices</button>
               )}
             </div>
 
-            <p className="text-slate-500 text-lg font-medium mb-12 max-w-xl leading-relaxed">
+            <p className="text-slate-500 text-base sm:text-lg font-medium mb-8 max-w-xl leading-relaxed">
               {user.isPaid
                 ? "You have lifetime access to the Professional Pack. Future compliance updates are included free for 12 months."
                 : "You are currently previewing documents. Unlock the full professional library to enable Word/PDF exports and brand customization."}
@@ -110,7 +110,7 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
             {!user.isPaid && products.length === 0 && !loadingProducts && (
               <button
                 onClick={onUpgrade}
-                className="w-full md:w-max px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all hover:-translate-y-1 active:translate-y-0"
+                className="w-full md:w-max px-8 py-4 sm:px-4 sm:py-3 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-sm md:text-lg lg:text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all hover:-translate-y-1 active:translate-y-0"
               >
                 Upgrade Pack ($49.00)
               </button>
@@ -121,14 +121,14 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {loadingProducts ? (
                 Array(2).fill(0).map((_, i) => (
-                  <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 animate-pulse">
+                  <div key={i} className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-100 animate-pulse">
                     <div className="h-4 w-24 bg-slate-100 rounded mb-4"></div>
                     <div className="h-8 w-48 bg-slate-50 rounded mb-6"></div>
                     <div className="h-12 w-full bg-slate-50 rounded-xl"></div>
                   </div>
                 ))
               ) : products.map((p) => (
-                <div key={p._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:border-indigo-200 transition-all group">
+                <div key={p._id} className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm hover:border-indigo-200 transition-all group">
                   <div className="flex justify-between items-start mb-6">
                     <div>
                       <h4 className="font-black text-xl text-slate-900">{p.name}</h4>
@@ -151,8 +151,8 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
           )}
         </div>
 
-        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-10">Pack Entitlements</h3>
+        <div className="bg-white p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col">
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-6 sm:mb-8 md:mb-10">Pack Entitlements</h3>
           <div className="space-y-6 flex-1">
             {[
               { label: 'Full SOP Library', unlocked: user.isPaid || user.isPro },
@@ -175,8 +175,8 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
         </div>
       </div>
 
-      <div className="bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-10">Transaction History</h3>
+      <div className="bg-white p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3.5rem] border border-slate-200 shadow-sm">
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-6 sm:mb-8 md:mb-10">Transaction History</h3>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 animate-pulse">
@@ -195,32 +195,32 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
             </button>
           </div>
         ) : transactions.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {transactions.map((tx) => (
-              <div key={tx._id} className="flex items-center justify-between p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors group">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl border border-slate-200 shadow-sm">
+              <div key={tx._id} className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors group gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl flex items-center justify-center text-xl sm:text-2xl border border-slate-200 shadow-sm shrink-0">
                     💳
                   </div>
-                  <div>
-                    <p className="text-lg font-black text-slate-900 tracking-tight">
+                  <div className="min-w-0">
+                    <p className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
                       {tx.productId === 'pro' ? 'Professional Pack' : 'Subscription'}
                     </p>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                      {formatDate(tx.createdAt)} • {tx.purchaseDevice === 'web' ? 'Web Purchase' : 'Mobile Purchase'}
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">
+                      {formatDate(tx.createdAt)} • {tx.purchaseDevice === 'web' ? 'Web' : 'Mobile'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <span className="text-xl font-black text-slate-900 block">{formatCurrency(tx.amount, 'USD')}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
+                  <div className="text-left sm:text-right">
+                    <span className="text-lg sm:text-xl font-black text-slate-900 block leading-tight">{formatCurrency(tx.amount, 'USD')}</span>
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-500">
                       Paid
                     </span>
                   </div>
                   <button
                     onClick={() => setSelectedReceipt(tx)}
-                    className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-black text-xs uppercase tracking-widest border border-slate-200 hover:border-indigo-600 transition-all shadow-sm"
+                    className="px-4 py-2 sm:px-6 sm:py-3 bg-white text-indigo-600 rounded-lg sm:rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest border border-slate-200 hover:border-indigo-600 transition-all shadow-sm"
                   >
                     Receipt
                   </button>
@@ -229,9 +229,9 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
             ))}
           </div>
         ) : (
-          <div className="text-center py-24 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-            <div className="text-6xl mb-6 grayscale opacity-20">💸</div>
-            <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">No transaction history found</p>
+          <div className="text-center py-12 sm:py-24 bg-slate-50 rounded-2xl sm:rounded-[2.5rem] border-2 border-dashed border-slate-200">
+            <div className="text-4xl sm:text-6xl mb-4 sm:mb-6 grayscale opacity-20">💸</div>
+            <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px]">No transaction history found</p>
           </div>
         )}
       </div>

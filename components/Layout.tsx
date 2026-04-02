@@ -19,6 +19,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ user }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = user.role === Role.ADMIN;
@@ -45,8 +46,14 @@ const Layout: React.FC<LayoutProps> = ({ user }) => {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
       <aside 
-        className={`bg-white border-r border-slate-200 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] ${isSidebarCollapsed ? 'w-[88px]' : 'w-72'}`}
+        className={`bg-white border-r border-slate-200 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] fixed lg:relative inset-y-0 left-0 z-50 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 ${isSidebarCollapsed ? 'lg:w-[88px] w-72' : 'w-72'}`}
       >
         <div className="h-20 px-6 flex items-center justify-between shrink-0">
           {!isSidebarCollapsed ? (
@@ -69,6 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ user }) => {
               <Tooltip key={item.path} content={isSidebarCollapsed ? item.label : ''}>
                 <Link
                   to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`w-full group relative flex items-center rounded-2xl transition-all duration-300 ease-out ${
                     isSidebarCollapsed ? 'justify-center py-3.5' : 'px-4 py-3.5'
                   } ${
@@ -97,7 +105,7 @@ const Layout: React.FC<LayoutProps> = ({ user }) => {
 
         <div className="p-4 bg-slate-50/50 border-t border-slate-100 mt-auto">
           <button 
-            onClick={() => navigate('/settings')}
+            onClick={() => { navigate('/settings'); setIsMobileMenuOpen(false); }}
             className={`w-full flex items-center rounded-2xl p-3 transition-all duration-300 group hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 ${
               isSidebarCollapsed ? 'justify-center' : 'space-x-4'
             }`}
@@ -132,22 +140,36 @@ const Layout: React.FC<LayoutProps> = ({ user }) => {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
-        <header className={`h-20 backdrop-blur-xl border-b px-10 flex items-center justify-between shrink-0 z-20 sticky top-0 transition-all duration-500 ${isAdmin ? 'bg-slate-900/95 text-white border-white/10 shadow-lg' : 'bg-white/90 border-slate-200/60 shadow-sm'}`}>
-          <div className="flex items-center space-x-6">
+        <header className={`h-16 lg:h-20 backdrop-blur-xl border-b px-4 sm:px-10  flex items-center justify-between shrink-0 z-20 sticky top-0 transition-all duration-500 ${isAdmin ? 'bg-slate-900/95 text-white border-white/10 shadow-lg' : 'bg-white/90 border-slate-200/60 shadow-sm'}`}>
+          <div className="flex items-center space-x-4 lg:space-x-6 gap-2 sm:gap-5 md:gap-0">
+            <div className='bg-indigo-600 rounded-xl'>
+             <button
+               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+               className={`lg:hidden p-2 rounded-xl transition-all active:scale-90 ${isAdmin ? 'text-white hover:bg-white/10' : 'text-white hover:bg-slate-100'}`}
+             >
+               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 {isMobileMenuOpen ? (
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                 ) : (
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                 )}
+               </svg>
+             </button>
+             </div>
              <div className="flex flex-col">
-               <h2 className={`text-2xl font-black capitalize tracking-tighter leading-none ${isAdmin ? 'text-white' : 'text-slate-900'}`}>
+               <h2 className={`text-lg sm:text-xl lg:text-2xl font-black capitalize tracking-tighter leading-none ${isAdmin ? 'text-white' : 'text-slate-900'}`}>
                  {location.pathname.split('/').pop()?.replace('-', ' ') || 'Dashboard'}
                </h2>
              </div>
           </div>
-          <div className="flex items-center space-x-5">
+          {/* <div className="flex items-center space-x-5">
              <button className={`p-2.5 rounded-xl relative transition-all group ${isAdmin ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}>
                <svg className="w-6 h-6 transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                </svg>
                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-indigo-600 rounded-full border-2 border-white ring-2 ring-indigo-500/20"></span>
              </button>
-          </div>
+          </div> */}
         </header>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <Outlet />

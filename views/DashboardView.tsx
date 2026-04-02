@@ -16,43 +16,40 @@ export const DashboardView: React.FC<{ user: User, onStartSOP: () => void, onVie
       setGeneratedDoc(result);
     } catch (error) {
       console.error('Failed to generate document:', error);
-      // Optional: Add error handling UI
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="p-10 max-w-7xl mx-auto space-y-10 font-sans">
-      {/* Welcome Widget - Optimized Heading */}
-      <div className="bg-white p-12 rounded-[3rem] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-50 rounded-full translate-x-1/2 -translate-y-1/2 opacity-40"></div>
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-auto mx-auto space-y-6 sm:space-y-8 lg:space-y-10 font-sans">
+      <div className="bg-white p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-[2rem] lg:rounded-[3rem] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col xl:flex-row sm:gap-4 gap-1  justify-between relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[250px] h-[250px] sm:w-[350px] sm:h-[350px] lg:w-[500px] lg:h-[500px] bg-indigo-50 rounded-full translate-x-1/2 -translate-y-1/2 opacity-40"></div>
         <div className="relative z-10 mb-8 md:mb-0">
-          <h1 className="text-5xl font-black text-slate-900 mb-4 tracking-tight">AI SOP Command Center</h1>
-          <p className="text-xl text-slate-500 max-w-xl leading-relaxed font-medium">Your <strong>standard operating procedure software</strong> is ready. Start a new automated SOP documentation pack below.</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 mb-2 sm:mb-3 lg:mb-4 tracking-tight">AI SOP Command Center</h1>
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-500 max-w-xl leading-relaxed font-medium">Your <strong>standard operating procedure software</strong> is ready. Start a new automated SOP documentation pack below.</p>
         </div>
         <button
           onClick={onStartSOP}
-          className="relative z-10 px-10 py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-xl hover:bg-indigo-700 shadow-[0_20px_40px_rgba(79,70,229,0.25)] hover:-translate-y-1 active:translate-y-0 transition-all flex items-center group"
+          className="relative z-10 px-6 py-4 sm:px-8 sm:py-5 lg:px-10 lg:py-4 bg-indigo-600 text-white rounded-2xl sm:rounded-[1.5rem] lg:rounded-[2rem] font-black text-sm sm:text-base xl:text-xl hover:bg-indigo-700 shadow-[0_20px_40px_rgba(79,70,229,0.25)] hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center group w-full md:w-auto"
         >
-          <svg className="w-7 h-7 mr-3 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 mr-2 sm:mr-3 group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
           Build New AI SOP Pack
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Pack Status Card */}
-        <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3  gap-6 sm:gap-8 lg:gap-10">
+        <div className="bg-white p-6  rounded-2xl sm:rounded-[2rem] lg:rounded-[3rem] border border-slate-200 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-6 sm:mb-8 lg:mb-10">
             <h2 className="font-black text-slate-900 uppercase tracking-[0.2em] text-[10px]">Active SOP Packs</h2>
             <span className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-lg">01</span>
           </div>
-          <div className="space-y-6 flex-1">
+          <div className="space-y-4 flex-1">
             <div
               onClick={onViewAll}
-              className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 group hover:border-indigo-300 hover:bg-white transition-all cursor-pointer shadow-sm hover:shadow-md"
+              className="p-5  rounded-2xl sm:rounded-[2rem] lg:rounded-[2.5rem] bg-slate-50 border border-slate-100 group hover:border-indigo-300 hover:bg-white transition-all cursor-pointer shadow-sm hover:shadow-md"
             >
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between gap-1 items-start mb-4 sm:mb-6">
                 <div>
                   <span className="text-lg font-black text-slate-900 block mb-2 tracking-tight">Acme Operations Pack</span>
                   <span className="text-[10px] px-3 py-1 bg-amber-100 text-amber-700 rounded-full font-black uppercase tracking-widest">Business Tier</span>
@@ -67,21 +64,21 @@ export const DashboardView: React.FC<{ user: User, onStartSOP: () => void, onVie
               <p className="text-xs font-bold text-slate-400">Step 2 of 4: Logic Mapping (35%)</p>
             </div>
           </div>
-          <button onClick={onViewAll} className="mt-10 text-indigo-600 text-xs font-black uppercase tracking-[0.3em] hover:tracking-[0.35em] transition-all text-center">Manage SOP Inventory</button>
+          <button onClick={onViewAll} className="mt-6 sm:mt-8 lg:mt-10 text-indigo-600 text-xs font-black uppercase tracking-[0.3em] hover:tracking-[0.35em] transition-all text-center">Manage SOP Inventory</button>
         </div>
 
         {/* Activity Feed */}
-        <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
-          <h3 className="font-black text-slate-900 uppercase tracking-[0.2em] text-[10px] mb-10">Process Documentation Feed</h3>
-          <div className="space-y-8">
+        <div className="bg-white p-6 rounded-2xl sm:rounded-[2rem] lg:rounded-[3rem] border border-slate-200 shadow-sm">
+          <h3 className="font-black text-slate-900 uppercase tracking-[0.2em] text-[10px] mb-6 sm:mb-8 lg:mb-10">Process Documentation Feed</h3>
+          <div className="space-y-5 sm:space-y-6 lg:space-y-8">
             {[
               { icon: '📄', title: 'AI SOP Template Created', desc: 'Expense Reimbursement v1', time: '2 hours ago' },
               { icon: '⚙️', title: 'Documentation Sync', desc: 'Tone changed to "Professional"', time: 'Yesterday' },
               { icon: '🏢', title: 'Enterprise Profile Built', desc: 'Acme Digital Solutions', time: '2 days ago' },
               { icon: '📩', title: 'System Security Audit', desc: 'Verified identity node', time: '3 days ago' },
             ].map((act, i) => (
-              <div key={i} className="flex items-start space-x-5">
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-100 shrink-0">{act.icon}</div>
+              <div key={i} className="flex items-start space-x-3 sm:space-x-4 lg:space-x-5">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-sm border border-slate-100 shrink-0">{act.icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-slate-900 truncate">{act.title}</p>
                   <p className="text-xs text-slate-500 mb-1.5 truncate">{act.desc}</p>
@@ -93,28 +90,28 @@ export const DashboardView: React.FC<{ user: User, onStartSOP: () => void, onVie
         </div>
 
         {/* AI Tip / Recommendation */}
-        <div className="bg-slate-900 p-10 rounded-[3rem] shadow-2xl text-white relative overflow-hidden flex flex-col">
+        <div className="bg-slate-900 p-6  rounded-2xl sm:rounded-[2rem] lg:rounded-[3rem] shadow-2xl text-white relative overflow-hidden flex flex-col">
           <div className="relative z-10 w-full">
-            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md border border-white/10">
-              <svg className="w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl sm:rounded-2xl flex items-center justify-center mb-5 sm:mb-6 lg:mb-8 backdrop-blur-md border border-white/10">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
-            <h3 className="font-black text-2xl mb-4 tracking-tight uppercase">AI Compliance Insight</h3>
+            <h3 className="font-black text-lg sm:text-xl lg:text-2xl mb-3 sm:mb-4 tracking-tight uppercase">AI Compliance Insight</h3>
 
             {!generatedDoc ? (
               <>
-                <p className="text-slate-400 text-sm mb-6 leading-relaxed font-medium">Standardize your <strong>business processes</strong>. Generate comprehensive SOPs instantly.</p>
+                <p className="text-slate-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed font-medium">Standardize your <strong>business processes</strong>. Generate comprehensive SOPs instantly.</p>
                 <div className="space-y-4">
                   <input
                     type="text"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     placeholder="e.g. HR Management SOP..."
-                    className="w-full px-5 py-4 bg-slate-800 border border-slate-700 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm font-medium"
+                    className="w-full px-4 py-3 sm:px-5 sm:py-4 bg-slate-800 border border-slate-700 rounded-xl sm:rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs sm:text-sm font-medium"
                   />
                   <button
                     onClick={() => (user.isPaid || user.isPro) ? handleGenerate() : window.location.href = '/billing'}
                     disabled={isGenerating || ((user.isPaid || user.isPro) && !question.trim())}
-                    className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm hover:bg-indigo-500 shadow-xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3.5 sm:py-4 lg:py-5 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm hover:bg-indigo-500 shadow-xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isGenerating ? (
                       <>
@@ -134,7 +131,7 @@ export const DashboardView: React.FC<{ user: User, onStartSOP: () => void, onVie
                 </div>
               </>
             ) : (
-              <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 animate-fade-in">
+              <div className="bg-slate-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-700 animate-fade-in">
                 <h4 className="font-black text-lg mb-2 text-white">{generatedDoc.title}</h4>
                 <p className="text-xs text-slate-400 mb-6 uppercase tracking-wider">{generatedDoc.businessVertical}</p>
                 <div className="space-y-3">

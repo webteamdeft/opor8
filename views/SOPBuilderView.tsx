@@ -354,34 +354,34 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">AI-Powered SOP Creation Tool</h1>
-        <p className="text-slate-500 font-medium mt-2">Select your <strong>Industry</strong> and <strong>Department</strong> to generate documentation.</p>
+    <div className="p-4 sm:p-6 md:p-8 max-w-auto mx-auto space-y-8 sm:space-y-10 md:space-y-12">
+      <div className="text-center mb-6 sm:mb-8 md:mb-12">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase">AI-Powered SOP Creation Tool</h1>
+        <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">Select your <strong>Industry</strong> and <strong>Department</strong> to generate documentation.</p>
       </div>
 
       {/* Company Selection Section */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">1</div>
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Select Industry / Company</h2>
+      <section className="space-y-4 sm:space-y-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600 text-white rounded-lg sm:rounded-xl flex items-center justify-center font-black text-sm sm:text-base">1</div>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">Select Industry / Company</h2>
         </div>
 
         {loadingCompanies ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="flex justify-center p-8 sm:p-12">
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {companies.map((company) => (
               <div
                 key={company._id}
                 onClick={() => handleCompanyClick(company._id)}
-                className={`p-6 border-2 rounded-2xl cursor-pointer transition-all flex flex-col items-center text-center group ${selectedCompanyId === company._id ? 'border-indigo-600 bg-indigo-50 shadow-lg' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+                className={`p-4 sm:p-6 border-2 rounded-xl sm:rounded-2xl cursor-pointer transition-all flex flex-col items-center text-center group ${selectedCompanyId === company._id ? 'border-indigo-600 bg-indigo-50 shadow-lg' : 'border-slate-100 bg-white hover:border-slate-200'}`}
               >
-                <div className="text-3xl mb-3">🏢</div>
-                <h3 className="font-bold text-sm text-slate-900 line-clamp-2">{company.companyName}</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{company.type}</p>
+                <div className="text-2xl sm:text-3xl mb-2 sm:mb-3">🏢</div>
+                <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2">{company.companyName}</h3>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mt-1">{company.type}</p>
               </div>
             ))}
           </div>
@@ -390,30 +390,30 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
 
       {/* Questions Section */}
       {selectedCompanyId && (
-        <section className="space-y-6 animate-fade-in">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">2</div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Available Questions</h2>
+        <section className="space-y-4 sm:space-y-6 animate-fade-in">
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600 text-white rounded-lg sm:rounded-xl flex items-center justify-center font-black text-sm sm:text-base">2</div>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">Available Questions</h2>
           </div>
 
           {loadingQuestions ? (
-            <div className="flex justify-center p-12">
+            <div className="flex justify-center p-8 sm:p-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {questions.length > 0 ? (
                 questions.map((q) => (
-                  <div key={q._id} className="p-6 bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-all group ring-1 ring-slate-100">
-                    <div className="flex gap-4 mb-4">
-                      <div className="w-8 h-8 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  <div key={q._id} className="p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-md transition-all group ring-1 ring-slate-100">
+                    <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                         <span className="text-xs font-black">Q</span>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-800 text-sm leading-snug">
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-800 text-xs sm:text-sm leading-snug">
                           {q.question} <span className="text-red-500">*</span>
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{q.description || 'General Business Question'}</p>
+                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{q.description || 'General Business Question'}</p>
                       </div>
                     </div>
 
@@ -423,7 +423,7 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
                         onChange={(e) => handleAnswerChange(q._id, e.target.value)}
                         required
                         placeholder="Provide details for this process... (Required)"
-                        className={`w-full px-4 py-3 bg-slate-50 border rounded-xl text-sm text-slate-900 font-medium focus:outline-none transition-all resize-none h-24 ${!answers[q._id] || answers[q._id].trim() === '' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100 focus:border-indigo-500 focus:bg-white'}`}
+                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-50 border rounded-lg sm:rounded-xl text-xs sm:text-sm text-slate-900 font-medium focus:outline-none transition-all resize-none h-20 sm:h-24 ${!answers[q._id] || answers[q._id].trim() === '' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100 focus:border-indigo-500 focus:bg-white'}`}
                       />
                       <div className="absolute right-3 bottom-3 opacity-20 pointer-events-none text-slate-900">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -432,8 +432,8 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
                   </div>
                 ))
               ) : (
-                <div className="col-span-full p-12 bg-slate-50 rounded-3xl text-center">
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">No questions found for this company</p>
+                <div className="col-span-full p-8 sm:p-12 bg-slate-50 rounded-2xl sm:rounded-3xl text-center">
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs sm:text-sm">No questions found for this company</p>
                 </div>
               )}
             </div>
@@ -444,12 +444,12 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
       {/* Submission and Progress for Questions */}
       {(selectedCompanyId || jobStatus !== 'idle') && (
         <section className="space-y-6 animate-fade-in">
-          <div className="flex flex-col items-center gap-6 mt-8 bg-indigo-50/50 p-10 rounded-[2.5rem] border border-indigo-100 shadow-inner">
-            <div className="text-center max-w-xl">
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">
+          <div className="flex flex-col items-center gap-4 sm:gap-6 mt-6 sm:mt-8 bg-indigo-50/50 p-5 sm:p-7 md:p-10 rounded-2xl sm:rounded-[2rem] md:rounded-[2.5rem] border border-indigo-100 shadow-inner">
+            <div className="text-center max-w-xl px-2">
+              <h3 className="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight mb-1.5 sm:mb-2">
                 {jobStatus === 'idle' ? 'Ready to Generate?' : 'Document Generation'}
               </h3>
-              <p className="text-sm text-slate-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
                 {jobStatus === 'idle'
                   ? "We'll use your answers to build a customized operational blueprint tailored to your specific process."
                   : "Please wait while our AI synthesizes your custom documentation."}
@@ -473,21 +473,21 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
               </div>
             ) : jobStatus === 'completed' && generatedDoc ? (
               <div className="w-full max-w-2xl animate-fade-in">
-                <div className="bg-white rounded-3xl p-8 border border-indigo-100 shadow-xl ring-1 ring-indigo-50">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h4 className="font-black text-2xl mb-1 text-slate-900">{generatedDoc.title}</h4>
-                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{generatedDoc.businessVertical}</p>
+                <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 border border-indigo-100 shadow-xl ring-1 ring-indigo-50">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4 sm:mb-6">
+                    <div className="min-w-0">
+                      <h4 className="font-black text-lg sm:text-xl md:text-2xl mb-1 text-slate-900">{generatedDoc.title}</h4>
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 font-black uppercase tracking-widest">{generatedDoc.businessVertical}</p>
                     </div>
-                    <div className="px-3 py-1 bg-green-100 text-green-600 text-[10px] font-black uppercase rounded-full tracking-widest">Completed</div>
+                    <div className="px-3 py-1 bg-green-100 text-green-600 text-[10px] font-black uppercase rounded-full tracking-widest shrink-0">Completed</div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <a href={generatedDoc.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center py-4 bg-red-50 text-red-600 border border-red-100 rounded-2xl font-black hover:bg-red-100 transition-all shadow-sm active:scale-95">
-                      <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <a href={generatedDoc.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center py-3 sm:py-4 bg-red-50 text-red-600 border border-red-100 rounded-xl sm:rounded-2xl font-black text-sm hover:bg-red-100 transition-all shadow-sm active:scale-95">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                       Download PDF
                     </a>
-                    <a href={generatedDoc.docxUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center py-4 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl font-black hover:bg-blue-100 transition-all shadow-sm active:scale-95">
-                      <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <a href={generatedDoc.docxUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center py-3 sm:py-4 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl sm:rounded-2xl font-black text-sm hover:bg-blue-100 transition-all shadow-sm active:scale-95">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       Download DOCX
                     </a>
                   </div>
@@ -497,9 +497,9 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
               <button
                 onClick={handleSubmitAnswers}
                 disabled={questions.length === 0 || questions.some(q => !answers[q._id] || answers[q._id].trim() === '')}
-                className="px-10 py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-lg hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center gap-3"
+                className="px-6 py-3.5 sm:px-8 sm:py-4 md:px-10 md:py-5 bg-indigo-600 text-white rounded-2xl sm:rounded-[1.5rem] md:rounded-[2rem] font-black text-sm sm:text-base md:text-lg hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center gap-2 sm:gap-3"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                 Generate Document Now
               </button>
             )}
