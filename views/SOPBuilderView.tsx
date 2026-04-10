@@ -4,8 +4,26 @@ import { DB } from '../services/db';
 import { SOPPack, StepStatus, User } from '../types';
 
 export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => void }> = ({ user, onNext }) => {
-  const [selectedDepts, setSelectedDepts] = useState<string[]>(['Finance', 'HR & People']);
   const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Industry State
+  const [industries, setIndustries] = useState<any[]>([]);
+  const [selectedIndustryId, setSelectedIndustryId] = useState<string | null>(null);
+  const [loadingIndustries, setLoadingIndustries] = useState(false);
+
+  // Add Company State
+  const [isAddCompanyModalOpen, setIsAddCompanyModalOpen] = useState(false);
+  const [basicQuestions, setBasicQuestions] = useState<any[]>([]);
+  const [loadingBasicQuestions, setLoadingBasicQuestions] = useState(false);
+  const [newCompanyAnswers, setNewCompanyAnswers] = useState<Record<string, string>>({});
+  const [savingCompany, setSavingCompany] = useState(false);
+
+  // Search State
+  const [industrySearch, setIndustrySearch] = useState('');
+  const [isIndustryDropdownOpen, setIsIndustryDropdownOpen] = useState(false);
+  const [companySearch, setCompanySearch] = useState('');
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
 
   // Company & Questions State
   const [companies, setCompanies] = useState<any[]>([]);
@@ -26,17 +44,19 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
   const [jobStatus, setJobStatus] = useState<'idle' | 'in-progress' | 'completed' | 'failed'>('idle');
 
   React.useEffect(() => {
-    const fetchCompanies = async () => {
-      setLoadingCompanies(true);
+    const fetchIndustries = async () => {
+      setLoadingIndustries(true);
       try {
-        const data = await DB.companies.getCompanyList();
-        setCompanies(data.list || []);
+        const data = await DB.companies.getIndustryList();
+        setIndustries(data.data || data.list || data || []);
       } catch (error) {
-        console.error('Failed to fetch companies:', error);
+        console.error('Failed to fetch industries:', error);
       } finally {
-        setLoadingCompanies(false);
+        setLoadingIndustries(false);
       }
     };
+
+
     const checkActiveJob = async () => {
       try {
         const result = await DB.docs.getActiveJob();
@@ -44,6 +64,7 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
         if (activeJobId) {
           setJobId(activeJobId);
           setJobStatus('in-progress');
+          setCurrentStep(4);
 
           // Fetch initial progress immediately
           try {
@@ -66,7 +87,7 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
       }
     };
 
-    fetchCompanies();
+    fetchIndustries();
     checkActiveJob();
   }, []);
 
@@ -219,6 +240,84 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
     };
   }, [jobStatus, jobId]);
 
+  const handleOpenAddCompany = async () => {
+    setIsAddCompanyModalOpen(true);
+    if (basicQuestions.length === 0) {
+      setLoadingBasicQuestions(true);
+      try {
+        const data = await DB.companies.getBasicQuestions();
+        setBasicQuestions(data.data || data.list || data || []);
+
+        // Pre-fill industryId if selected
+        if (selectedIndustryId) {
+          setNewCompanyAnswers(prev => ({ ...prev, industryId: selectedIndustryId }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch basic questions:', error);
+      } finally {
+        setLoadingBasicQuestions(false);
+      }
+    } else if (selectedIndustryId && !newCompanyAnswers['industryId']) {
+      setNewCompanyAnswers(prev => ({ ...prev, industryId: selectedIndustryId }));
+    }
+  };
+
+  const handleSaveCompany = async () => {
+    setSavingCompany(true);
+    try {
+      const payload: any = { ...newCompanyAnswers };
+      if (!payload.documentLanguage) {
+        payload.documentLanguage = "English";
+      }
+
+      if (payload.employeeCount) {
+        const empStr = String(payload.employeeCount).toLowerCase();
+        payload.hasRegularContractors = empStr.includes('yes') || empStr.includes('true');
+      } else {
+        payload.hasRegularContractors = false;
+      }
+
+      if (!payload.type) payload.type = "Private Limited";
+      if (!payload.description) payload.description = payload.companyName || "N/A";
+
+      await DB.companies.addCompany(payload);
+
+      setIsAddCompanyModalOpen(false);
+      setNewCompanyAnswers({});
+
+      // Refresh companies and auto-select
+      if (selectedIndustryId) {
+        setLoadingCompanies(true);
+        const data = await DB.companies.getCompanyList(selectedIndustryId);
+        setCompanies(data.data || data.list || data || []);
+        setLoadingCompanies(false);
+        setCurrentStep(2); // Stay on company step after adding
+      }
+    } catch (error) {
+      console.error('Failed to save company:', error);
+      alert('Failed to save company. Please try again.');
+    } finally {
+      setSavingCompany(false);
+    }
+  };
+
+  const handleIndustryClick = async (industryId: string) => {
+    setSelectedIndustryId(industryId);
+    setSelectedCompanyId(null);
+    setCompanies([]);
+    setQuestions([]);
+    setLoadingCompanies(true);
+    try {
+      const data = await DB.companies.getCompanyList(industryId);
+      setCompanies(data.data || data.list || data || []);
+      setCurrentStep(2);
+    } catch (error) {
+      console.error('Failed to fetch companies:', error);
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
+
   const handleCompanyClick = async (companyId: string) => {
     setSelectedCompanyId(companyId);
     setLoadingQuestions(true);
@@ -229,7 +328,13 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
     setGeneratedDoc(null);
     try {
       const data = await DB.companies.getQuestions(companyId);
-      setQuestions(data.list || []);
+      let list = [];
+      if (Array.isArray(data)) list = data;
+      else if (data && Array.isArray(data.list)) list = data.list;
+      else if (data && data.data && Array.isArray(data.data.list)) list = data.data.list;
+      else if (data && Array.isArray(data.data)) list = data.data;
+      setQuestions(list);
+      setCurrentStep(3);
     } catch (error) {
       console.error('Failed to fetch questions:', error);
     } finally {
@@ -317,142 +422,353 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
     }
   };
 
-  const handleGenerate = async () => {
-    if (!question.trim()) return;
-    setIsGenerating(true);
-    try {
-      const result = await DB.docs.generateDocument(question);
-      setGeneratedDoc(result);
-    } catch (error) {
-      console.error('Failed to generate document:', error);
-      // Optional: Add error handling UI
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleContinue = async () => {
-    setLoading(true);
-    try {
-      const pack: SOPPack = {
-        id: crypto.randomUUID(),
-        userId: user.id,
-        name: 'Custom SOP Documentation Pack',
-        departments: selectedDepts,
-        status: StepStatus.QUEUED,
-        progress: 0,
-        createdAt: new Date().toISOString()
-      };
-      await DB.packs.create(pack);
-      onNext(pack.id);
-    } catch (error) {
-      console.error('Error creating pack:', error);
-      alert('Failed to create SOP pack. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const steps = [
+    { title: 'Industry', icon: '🏢' },
+    { title: 'Company', icon: '🏗️' },
+    { title: 'Questions', icon: '❓' },
+    { title: 'Generate', icon: '✨' }
+  ];
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-auto mx-auto space-y-8 sm:space-y-10 md:space-y-12">
-      <div className="text-center mb-6 sm:mb-8 md:mb-12">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase">AI-Powered SOP Creation Tool</h1>
-        <p className="text-sm sm:text-base text-slate-500 font-medium mt-2">Select your <strong>Industry</strong> and <strong>Department</strong> to generate documentation.</p>
-      </div>
-
-      {/* Company Selection Section */}
-      <section className="space-y-4 sm:space-y-6">
-        <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600 text-white rounded-lg sm:rounded-xl flex items-center justify-center font-black text-sm sm:text-base">1</div>
-          <h2 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">Select Industry / Company</h2>
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-2">
+        <div className="text-left">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <span className="p-2 bg-indigo-600 rounded-lg text-white">✨</span>
+            <span className="uppercase italic">SOP Builder</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-bold uppercase tracking-wider mt-1 opacity-60">Enterprise AI Generator</p>
         </div>
 
-        {loadingCompanies ? (
-          <div className="flex justify-center p-8 sm:p-12">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {companies.map((company) => (
+        {/* Stepper */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {steps.map((step, idx) => (
+            <React.Fragment key={idx}>
               <div
-                key={company._id}
-                onClick={() => handleCompanyClick(company._id)}
-                className={`p-4 sm:p-6 border-2 rounded-xl sm:rounded-2xl cursor-pointer transition-all flex flex-col items-center text-center group ${selectedCompanyId === company._id ? 'border-indigo-600 bg-indigo-50 shadow-lg' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${currentStep === idx + 1 ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : idx + 1 < currentStep ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-white border-slate-100 text-slate-400 opacity-50'}`}
+                onClick={() => {
+                  if (idx + 1 < currentStep && jobStatus === 'idle') {
+                    setCurrentStep(idx + 1);
+                  }
+                }}
+                style={{ cursor: idx + 1 < currentStep && jobStatus === 'idle' ? 'pointer' : 'default' }}
               >
-                <div className="text-2xl sm:text-3xl mb-2 sm:mb-3">🏢</div>
-                <h3 className="font-bold text-xs sm:text-sm text-slate-900 line-clamp-2">{company.companyName}</h3>
-                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase mt-1">{company.type}</p>
+                <span className="text-xs font-black">{idx + 1}</span>
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-tighter hidden sm:inline">{step.title}</span>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Questions Section */}
-      {selectedCompanyId && (
-        <section className="space-y-4 sm:space-y-6 animate-fade-in">
-          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600 text-white rounded-lg sm:rounded-xl flex items-center justify-center font-black text-sm sm:text-base">2</div>
-            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">Available Questions</h2>
-          </div>
-
-          {loadingQuestions ? (
-            <div className="flex justify-center p-8 sm:p-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              {questions.length > 0 ? (
-                questions.map((q) => (
-                  <div key={q._id} className="p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-md transition-all group ring-1 ring-slate-100">
-                    <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                        <span className="text-xs font-black">Q</span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-800 text-xs sm:text-sm leading-snug">
-                          {q.question} <span className="text-red-500">*</span>
-                        </p>
-                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{q.description || 'General Business Question'}</p>
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <textarea
-                        value={answers[q._id] || ''}
-                        onChange={(e) => handleAnswerChange(q._id, e.target.value)}
-                        required
-                        placeholder="Provide details for this process... (Required)"
-                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-50 border rounded-lg sm:rounded-xl text-xs sm:text-sm text-slate-900 font-medium focus:outline-none transition-all resize-none h-20 sm:h-24 ${!answers[q._id] || answers[q._id].trim() === '' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100 focus:border-indigo-500 focus:bg-white'}`}
-                      />
-                      <div className="absolute right-3 bottom-3 opacity-20 pointer-events-none text-slate-900">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full p-8 sm:p-12 bg-slate-50 rounded-2xl sm:rounded-3xl text-center">
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs sm:text-sm">No questions found for this company</p>
-                </div>
+              {idx < steps.length - 1 && (
+                <div className={`w-4 sm:w-8 h-[2px] rounded-full ${idx + 1 < currentStep ? 'bg-indigo-400' : 'bg-slate-100'}`}></div>
               )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 1: Industry Selection */}
+      {currentStep === 1 && (
+        <section className="space-y-6 animate-fade-in-up">
+          <div className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-indigo-50/20">
+            <div className="mb-8">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-4">
+                <span className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">1</span>
+                What industry is your business in?
+              </h2>
+              <p className="text-slate-500 text-sm font-medium mt-2 ml-14">This helps us tailor the specific operational questions to your sector.</p>
             </div>
-          )}
+
+            {loadingIndustries ? (
+              <div className="flex justify-center p-8 sm:p-12">
+                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setIsIndustryDropdownOpen(!isIndustryDropdownOpen)}
+                  className="w-full sm:max-w-md px-4 py-3 bg-white border-2 border-slate-200 rounded-xl flex justify-between items-center text-slate-700 font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <div className="flex flex-col items-start truncate mr-4">
+                    <span className="truncate w-full text-left">
+                      {selectedIndustryId
+                        ? (industries.find(i => i._id === selectedIndustryId)?.name || industries.find(i => i._id === selectedIndustryId)?.companyName || 'Unknown Industry')
+                        : 'Search and Select an Industry...'}
+                    </span>
+                    {selectedIndustryId && (
+                      <span className="text-[10px] text-slate-400 font-medium truncate w-full text-left mt-0.5">
+                        {industries.find(i => i._id === selectedIndustryId)?.description || industries.find(i => i._id === selectedIndustryId)?.type}
+                      </span>
+                    )}
+                  </div>
+                  <svg className={`w-5 h-5 text-slate-400 transition-transform ${isIndustryDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+
+                {isIndustryDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsIndustryDropdownOpen(false)}></div>
+                    <div className="absolute z-20 w-full sm:max-w-md mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-fade-in fade-in duration-100">
+                      <div className="p-2 border-b border-slate-100 bg-slate-50 relative">
+                        <svg className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <input
+                          type="text"
+                          value={industrySearch}
+                          onChange={(e) => setIndustrySearch(e.target.value)}
+                          placeholder="Search industries..."
+                          className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {industries.filter(ind => {
+                          const label = (ind.name || ind.companyName || '').toLowerCase();
+                          return label.includes(industrySearch.toLowerCase());
+                        }).length === 0 ? (
+                          <div className="p-6 text-center text-slate-500 text-sm font-bold bg-slate-50/50">No industries found</div>
+                        ) : (
+                          industries.filter(ind => {
+                            const label = (ind.name || ind.companyName || '').toLowerCase();
+                            return label.includes(industrySearch.toLowerCase());
+                          }).map(industry => (
+                            <button
+                              key={industry._id}
+                              onClick={() => {
+                                handleIndustryClick(industry._id);
+                                setIsIndustryDropdownOpen(false);
+                                setIndustrySearch('');
+                              }}
+                              className={`w-full text-left px-4 py-3 text-sm transition-colors border-b border-slate-50 last:border-0 ${selectedIndustryId === industry._id ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl opacity-80 group-hover:opacity-100">🏢</span>
+                                <div className="flex flex-col overflow-hidden">
+                                  <span className="truncate">{industry.name || industry.companyName}</span>
+                                  <span className="text-[10px] text-slate-400 truncate mt-0.5">{industry.description || industry.type}</span>
+                                </div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
-      {/* Submission and Progress for Questions */}
-      {(selectedCompanyId || jobStatus !== 'idle') && (
-        <section className="space-y-6 animate-fade-in">
-          <div className="flex flex-col items-center gap-4 sm:gap-6 mt-6 sm:mt-8 bg-indigo-50/50 p-5 sm:p-7 md:p-10 rounded-2xl sm:rounded-[2rem] md:rounded-[2.5rem] border border-indigo-100 shadow-inner">
-            <div className="text-center max-w-xl px-2">
-              <h3 className="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight mb-1.5 sm:mb-2">
-                {jobStatus === 'idle' ? 'Ready to Generate?' : 'Document Generation'}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                {jobStatus === 'idle'
-                  ? "We'll use your answers to build a customized operational blueprint tailored to your specific process."
-                  : "Please wait while our AI synthesizes your custom documentation."}
+      {/* Step 2: Company Selection */}
+      {currentStep === 2 && (
+        <section className="space-y-6 animate-fade-in-up">
+          <div className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-indigo-50/20">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-4">
+                  <span className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">2</span>
+                  Select or create a company
+                </h2>
+                <p className="text-slate-500 text-sm font-medium mt-2 ml-14">Choose your entity to load specific business parameters.</p>
+              </div>
+              <button
+                onClick={handleOpenAddCompany}
+                className="ml-14 sm:ml-0 px-6 py-3 bg-indigo-600 text-white text-xs font-black uppercase rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+                Add Company
+              </button>
+            </div>
+
+            {loadingCompanies ? (
+              <div className="flex justify-center p-12 ml-14">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}
+                  className="w-full sm:max-w-md px-4 py-3 bg-white border-2 border-slate-200 rounded-xl flex justify-between items-center text-slate-700 font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <div className="flex flex-col items-start truncate mr-4">
+                    <span className="truncate w-full text-left">
+                      {selectedCompanyId
+                        ? companies.find(c => c._id === selectedCompanyId)?.companyName || 'Unknown Company'
+                        : 'Search and Select a Company...'}
+                    </span>
+                    {selectedCompanyId && (
+                      <span className="text-[10px] text-slate-400 font-medium truncate w-full text-left mt-0.5">
+                        {companies.find(c => c._id === selectedCompanyId)?.type}
+                      </span>
+                    )}
+                  </div>
+                  <svg className={`w-5 h-5 text-slate-400 transition-transform ${isCompanyDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+
+                {isCompanyDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsCompanyDropdownOpen(false)}></div>
+                    <div className="absolute z-20 w-full sm:max-w-md mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-fade-in fade-in duration-100">
+                      <div className="p-2 border-b border-slate-100 bg-slate-50 relative">
+                        <svg className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <input
+                          type="text"
+                          value={companySearch}
+                          onChange={(e) => setCompanySearch(e.target.value)}
+                          placeholder="Search companies..."
+                          className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {companies.filter(comp => {
+                          const label = (comp.companyName || '').toLowerCase();
+                          return label.includes(companySearch.toLowerCase());
+                        }).length === 0 ? (
+                          <div className="p-6 text-center text-slate-500 text-sm font-bold bg-slate-50/50">No companies found</div>
+                        ) : (
+                          companies.filter(comp => {
+                            const label = (comp.companyName || '').toLowerCase();
+                            return label.includes(companySearch.toLowerCase());
+                          }).map(company => (
+                            <button
+                              key={company._id}
+                              onClick={() => {
+                                handleCompanyClick(company._id);
+                                setIsCompanyDropdownOpen(false);
+                                setCompanySearch('');
+                              }}
+                              className={`w-full text-left px-4 py-3 text-sm transition-colors border-b border-slate-50 last:border-0 ${selectedCompanyId === company._id ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700 hover:bg-slate-50 font-medium'}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl opacity-80 group-hover:opacity-100">🏢</span>
+                                <div className="flex flex-col overflow-hidden">
+                                  <span className="truncate">{company.companyName}</span>
+                                  <span className="text-[10px] text-slate-400 truncate mt-0.5">{company.type}</span>
+                                </div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="mt-12 pt-8 border-t border-slate-50 flex items-center gap-4">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="px-6 py-3 text-slate-400 font-black uppercase text-xs hover:text-slate-600 transition-colors"
+              >
+                Back to Industry
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Step 3: Questions */}
+      {currentStep === 3 && (
+        <section className="space-y-6 animate-fade-in-up">
+          <div className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-indigo-50/20">
+            <div className="mb-8">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-4">
+                <span className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">3</span>
+                Assessment Questions
+              </h2>
+              <p className="text-slate-500 text-sm font-medium mt-2 ml-14">Please answer the following to help our AI understand your specific operations.</p>
+            </div>
+
+            {loadingQuestions ? (
+              <div className="flex justify-center p-12 ml-14">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  {questions.length > 0 ? (
+                    questions.map((q) => (
+                      <div key={q._id} className="p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-md transition-all group ring-1 ring-slate-100">
+                        <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <span className="text-xs font-black">Q</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-800 text-xs sm:text-sm leading-snug">
+                              {q.question} <span className="text-red-500">*</span>
+                            </p>
+                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tight">{q.description || 'General Business Question'}</p>
+                          </div>
+                        </div>
+
+                        <div className="relative">
+                          <textarea
+                            value={answers[q._id] || ''}
+                            onChange={(e) => handleAnswerChange(q._id, e.target.value)}
+                            required
+                            placeholder="Provide details for this process... (Required)"
+                            className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-50 border rounded-lg sm:rounded-xl text-xs sm:text-sm text-slate-900 font-medium focus:outline-none transition-all resize-none h-20 sm:h-24 ${!answers[q._id] || answers[q._id].trim() === '' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100 focus:border-indigo-500 focus:bg-white'}`}
+                          />
+                          <div className="absolute right-3 bottom-3 opacity-20 pointer-events-none text-slate-900">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full p-8 sm:p-12 bg-slate-50 rounded-2xl sm:rounded-3xl text-center">
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs sm:text-sm">No questions found for this company</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-12 pt-8 border-t border-slate-50 flex items-center justify-between gap-4">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="px-6 py-3 text-slate-400 font-black uppercase text-xs hover:text-slate-600 transition-colors"
+                  >
+                    Back to Company
+                  </button>
+
+                  <div className="flex items-center gap-6">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 font-mono">Progress: {questions.length > 0 ? Math.round((Object.keys(answers).filter(k => answers[k]?.trim()).length / questions.length) * 100) : 0}% Complete</p>
+                      <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 transition-all duration-500"
+                          style={{ width: `${questions.length > 0 ? (Object.keys(answers).filter(k => answers[k]?.trim()).length / questions.length) * 100 : 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentStep(4)}
+                      disabled={questions.length === 0 || questions.some(q => !answers[q._id] || answers[q._id].trim() === '')}
+                      className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-tight hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all active:scale-95 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      Proceed to Generation
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Step 4: Generation */}
+      {currentStep === 4 && (
+        <section className="space-y-6 animate-fade-in-up">
+          <div className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-indigo-50/20">
+            <div className="mb-8">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-4">
+                <span className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">4</span>
+                {jobStatus === 'completed' && generatedDoc ? 'SOP Documentation Ready' : 'Document Synthesis'}
+              </h2>
+              <p className="text-slate-500 text-sm font-medium mt-2 ml-14">
+                {jobStatus === 'completed' && generatedDoc
+                  ? "Your enterprise documentation has been finalized and is ready for download."
+                  : "We're synthesizing your operational inputs into a professional SOP blueprint."}
               </p>
             </div>
 
@@ -502,6 +818,17 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                 Generate Document Now
               </button>
+            )}
+
+            {jobStatus === 'idle' && (
+              <div className="mt-8 pt-6 border-t border-slate-50">
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  className="px-6 py-3 text-slate-400 font-black uppercase text-xs hover:text-slate-600 transition-colors"
+                >
+                  Back to Questions
+                </button>
+              </div>
             )}
           </div>
         </section>
@@ -613,6 +940,73 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
         <div className="absolute -right-32 -bottom-32 w-80 h-80 bg-indigo-600/20 rounded-full blur-[100px]"></div>
         <div className="absolute -left-16 -top-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-[60px]"></div>
       </div> */}
+
+      {/* Add Company Modal */}
+      {isAddCompanyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-fade-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-100">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase">Add New Company</h2>
+              <button
+                onClick={() => setIsAddCompanyModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 hover:text-slate-700 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+              {loadingBasicQuestions ? (
+                <div className="flex justify-center p-8">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {basicQuestions.filter(q => q.key !== 'documentLanguage').map(q => (
+                    <div key={q._id} className="space-y-1.5">
+                      <label className="text-sm font-bold text-slate-700">{q.question}</label>
+                      {q.key === 'industryId' ? (
+                        <select
+                          value={newCompanyAnswers[q.key] || selectedIndustryId || ''}
+                          onChange={(e) => setNewCompanyAnswers(prev => ({ ...prev, [q.key]: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                        >
+                          <option value="" disabled>Select an industry</option>
+                          {industries.map(ind => (
+                            <option key={ind._id} value={ind._id}>{ind.name || ind.companyName}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={newCompanyAnswers[q.key] || ''}
+                          onChange={(e) => setNewCompanyAnswers(prev => ({ ...prev, [q.key]: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                          placeholder={`Enter ${q.key}`}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl sm:rounded-b-3xl flex justify-end gap-3">
+              <button
+                onClick={() => setIsAddCompanyModalOpen(false)}
+                className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={savingCompany}
+                onClick={handleSaveCompany}
+                className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {savingCompany ? 'Saving...' : 'Save Company'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };

@@ -302,14 +302,39 @@ export const DB = {
   },
 
   companies: {
-    async getCompanyList(): Promise<any> {
+    async getIndustryList(): Promise<any> {
+      const response = await api.get('/user/industry-list');
+      return response.data || response;
+    },
+
+    async getBasicQuestions(): Promise<any> {
       const payload = {
         offset: 0,
-        limit: 10,
+        limit: 100,
         sort: "createdAt",
         order: -1,
         search: ""
       };
+      const response = await api.post('/user/list-basic-questions', payload);
+      return response.data || response;
+    },
+
+    async addCompany(payload: any): Promise<any> {
+      const response = await api.post('/user/add-company', payload);
+      return response.data || response;
+    },
+
+    async getCompanyList(industryId?: string): Promise<any> {
+      const payload: any = {
+        offset: 0,
+        limit: 100,
+        sort: "createdAt",
+        order: -1,
+        search: ""
+      };
+      if (industryId) {
+        payload.industryId = industryId;
+      }
       const response = await api.post('/user/company-list', payload);
       return response.data || response;
     },
