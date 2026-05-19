@@ -1,13 +1,16 @@
-
 import React, { useRef, useState, useEffect } from 'react';
+import { DB } from '../services/db';
+import { Product } from '../types';
 
-export const LandingView: React.FC<{ onStart: () => void }> = ({ onStart }) => {
+export const LandingView: React.FC<{ user: any; onStart: () => void; onUpgrade?: (planId: string) => Promise<void> }> = ({ user, onStart, onUpgrade }) => {
   const howItWorksRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState('Operations');
   const [activeStep, setActiveStep] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   // Refs for scroll tracking in How It Works
   const stepRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
 
@@ -45,6 +48,36 @@ const [menuOpen, setMenuOpen] = useState(false);
     const handleScroll = () => {
       setScrolled(window.scrollY > 200);
     };
+
+    const fetchProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const response: any = await DB.payments.getProducts();
+        const data = response.data || response;
+        const list = Array.isArray(data) ? data : (data.list || []);
+
+        // Normalize product data
+        const normalized = list.map((p: any) => {
+          const metadata = p.metadata || {};
+          return {
+            ...p,
+            isPopular: p.isPopular === true || p.isPopular === 'true' || metadata.isPopular === 'true' || metadata.isPopular === true,
+            plan: p.plan || p.stripeProductId || p._id, // Ensure we have a plan identifier
+            features: Array.isArray(p.features) && p.features.length > 0
+              ? p.features
+              : (typeof metadata.features === 'string' ? JSON.parse(metadata.features) : (p.features || []))
+          };
+        });
+
+        setProducts(normalized);
+      } catch (error) {
+        console.error('Failed to fetch products on landing:', error);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+
+    fetchProducts();
 
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -113,62 +146,62 @@ const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="bg-white selection:bg-indigo-100 selection:text-indigo-900 min-h-screen font-sans overflow-x-hidden">
       {/* Navigation */}
-    <nav className={`fixed top-0 w-full z-50 px-4 sm:px-8 py-4 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100' : 'bg-transparent'}`}>
+      <nav className={`fixed top-0 w-full z-50 px-4 sm:px-8 py-4 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100' : 'bg-transparent'}`}>
 
-  {/* Logo */}
-  <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-200">O</div>
-    <span className="text-2xl font-black tracking-tighter text-slate-900 uppercase">OPOR8</span>
-  </div>
+        {/* Logo */}
+        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-200">O</div>
+          <span className="text-2xl font-black tracking-tighter text-slate-900 uppercase">OPOR8</span>
+        </div>
 
-  {/* Desktop Menu */}
-  <div className="hidden md:flex items-center space-x-8">
-    <button onClick={() => scrollTo(howItWorksRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600">How it works</button>
-    <button onClick={() => scrollTo(pricingRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600">Pricing</button>
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center space-x-8">
+          <button onClick={() => scrollTo(howItWorksRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600">How it works</button>
+          <button onClick={() => scrollTo(pricingRef)} className="text-sm text-slate-500 font-black uppercase tracking-widest hover:text-indigo-600">Pricing</button>
 
-    <button
-      onClick={onStart}
-      className={`px-6 py-2.5 bg-indigo-600 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-    >
-      Get Started Free
-    </button>
-  </div>
+          <button
+            onClick={onStart}
+            className={`px-6 py-2.5 bg-indigo-600 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          >
+            Get Started Free
+          </button>
+        </div>
 
-<div className='bg-indigo-600 p-2 md:hidden rounded-xl text-white'>
-  <button
-    className="md:hidden flex items-center"
-    onClick={() => setMenuOpen(!menuOpen)}
-  >
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      {menuOpen ? (
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      ) : (
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        <div className='bg-indigo-600 p-2 md:hidden rounded-xl text-white'>
+          <button
+            className="md:hidden flex items-center"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {menuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
+      </nav>
+      {menuOpen && (
+        <div className="md:hidden transition-all duration-300 ease-in-out fixed top-[70px] left-0 w-full bg-white shadow-md border-t p-4 flex flex-col gap-4 z-40">
+
+          <button onClick={() => { scrollTo(howItWorksRef); setMenuOpen(false); }} className="text-sm text-slate-700 font-bold uppercase">
+            How it works
+          </button>
+
+          <button onClick={() => { scrollTo(pricingRef); setMenuOpen(false); }} className="text-sm text-slate-700 font-bold uppercase">
+            Pricing
+          </button>
+
+          <button
+            onClick={() => { onStart(); setMenuOpen(false); }}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold text-sm"
+          >
+            Get Started Free
+          </button>
+
+        </div>
       )}
-    </svg>
-  </button>
-  </div>
-</nav>
-{menuOpen && (
-  <div className="md:hidden transition-all duration-300 ease-in-out fixed top-[70px] left-0 w-full bg-white shadow-md border-t p-4 flex flex-col gap-4 z-40">
-
-    <button onClick={() => { scrollTo(howItWorksRef); setMenuOpen(false); }} className="text-sm text-slate-700 font-bold uppercase">
-      How it works
-    </button>
-
-    <button onClick={() => { scrollTo(pricingRef); setMenuOpen(false); }} className="text-sm text-slate-700 font-bold uppercase">
-      Pricing
-    </button>
-
-    <button
-      onClick={() => { onStart(); setMenuOpen(false); }}
-      className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold text-sm"
-    >
-      Get Started Free
-    </button>
-
-  </div>
-)}
 
       {/* Hero Section */}
       <section className="pt-40 pb-24 px-8 overflow-hidden reveal">
@@ -194,11 +227,15 @@ const [menuOpen, setMenuOpen] = useState(false);
             </div>
             <div className="stagger-item flex items-center gap-8 pt-4">
               <div className="flex items-center gap-3">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/Microsoft_Office_Word_%282019%E2%80%93present%29.svg" className="w-6 h-6" alt="Word" />
+                <div className="w-6 h-6 flex items-center justify-center bg-blue-50 rounded-lg">
+                  <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </div>
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Word Ready</span>
               </div>
               <div className="flex items-center gap-3">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Adobe_Acrobat_Reader_DC_logo.svg" className="w-6 h-6" alt="PDF" />
+                <div className="w-6 h-6 flex items-center justify-center bg-red-50 rounded-lg">
+                  <svg className="w-4 h-4 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                </div>
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">PDF Export</span>
               </div>
             </div>
@@ -567,34 +604,113 @@ const [menuOpen, setMenuOpen] = useState(false);
           <h2 className="stagger-item text-5xl font-black text-slate-900 mb-4 tracking-tight uppercase">SOP SaaS Plans</h2>
           <p className="stagger-item text-slate-500 font-medium text-xl">Simple plans that grow with your team. Start small, scale fast.</p>
         </div>
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="stagger-item p-12 rounded-[3rem] border-2 border-slate-100 bg-white flex flex-col group hover:border-slate-200 transition-all hover:shadow-lg">
-            <h3 className="text-2xl font-black mb-2">SOP Starter</h3>
-            <div className="text-4xl font-black mb-8">$0</div>
-            <ul className="space-y-4 mb-12 flex-1">
-              {['2 Sample Documents', 'Business Profile Mapping', 'Basic AI SOP builder', 'PDF Export Only'].map((f, i) => (
-                <li key={i} className="flex items-center text-slate-600 font-medium text-sm">
-                  <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button onClick={onStart} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-slate-800 transition-all active:scale-95">Start Free</button>
-          </div>
-          <div className="stagger-item p-12 rounded-[3rem] border-4 border-indigo-600 bg-white shadow-2xl shadow-indigo-100 flex flex-col relative md:scale-105 z-10 transition-transform hover:scale-[1.07]">
-            <div className="absolute top-0 right-12 -translate-y-1/2 px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full">Recommended</div>
-            <h3 className="text-2xl font-black mb-2">Enterprise SOP Pack</h3>
-            <div className="text-4xl font-black mb-8">$49<span className="text-sm font-bold text-slate-400">/one-time</span></div>
-            <ul className="space-y-4 mb-12 flex-1">
-              {['All 44+ SOP Documents', 'Unlimited PDF & Word Exports', 'Audit-Ready Compliance', 'Custom Team Branding'].map((f, i) => (
-                <li key={i} className="flex items-center text-slate-900 font-black text-sm">
-                  <svg className="w-5 h-5 text-indigo-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button onClick={onStart} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all active:scale-95">Unlock Professional SaaS</button>
-          </div>
+        <div className="max-w-7xl mx-auto">
+          {!user ? (
+            <div className="bg-slate-900 rounded-[3rem] p-12 sm:p-20 text-center relative overflow-hidden group border border-white/5 shadow-2xl">
+              <div className="relative z-10">
+                <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-10 text-4xl shadow-2xl shadow-indigo-500/20 group-hover:scale-110 transition-transform duration-500">🔒</div>
+                <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">Unlock Exclusive Pricing.</h2>
+                <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
+                  Join hundreds of elite companies standardizing their operations with OPOR8.
+                  <strong> Sign in or create an account</strong> to view our dynamic SaaS plans and launch your first SOP.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <button
+                    onClick={onStart}
+                    className="w-full sm:w-auto px-12 py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-2xl hover:bg-indigo-700 shadow-2xl shadow-indigo-500/20 transition-all active:scale-95"
+                  >
+                    Login to View Plans
+                  </button>
+                  <button
+                    onClick={onStart}
+                    className="w-full sm:w-auto px-12 py-6 bg-white/5 text-white border border-white/10 rounded-[2rem] font-bold text-2xl hover:bg-white/10 transition-all"
+                  >
+                    Join OPOR8 Free
+                  </button>
+                </div>
+              </div>
+
+              {/* Background Accents */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-600/20 transition-colors duration-1000"></div>
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-violet-600/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 group-hover:bg-violet-600/20 transition-colors duration-1000"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {products.filter(p => p.isActive !== false).length > 0 ? (
+                products.filter(p => p.isActive !== false).map((plan, index) => (
+                  <div
+                    key={index}
+                    className={`stagger-item p-12 rounded-[3rem] border-2 bg-white flex flex-col group transition-all hover:shadow-xl relative ${plan.isPopular ? 'border-indigo-600 shadow-2xl shadow-indigo-100 md:scale-105 z-10' : 'border-slate-100'}`}
+                  >
+                    {plan.isPopular && (
+                      <div className="absolute top-0 right-12 -translate-y-1/2 px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full">
+                        Most Popular
+                      </div>
+                    )}
+                    <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
+                    <div className="text-4xl font-black mb-1">${plan.amount}</div>
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">
+                      {plan.metadata?.type === 'subscription' ? 'per month' : (plan.billingType ? `per ${plan.billingType}` : 'per pack')}
+                    </div>
+                    <ul className="space-y-4 mb-12 flex-1">
+                      {(plan.features && plan.features.length > 0 ? plan.features : (
+                        plan.name.toLowerCase().includes('pro') ? ['Unlimited documents', 'All departments covered', 'Priority support'] : ['1 document generation', 'Basic templates', 'Email support']
+                      )).map((f, i) => (
+                        <li key={i} className="flex items-center text-slate-600 font-medium text-sm">
+                          <svg className="w-5 h-5 text-indigo-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => {
+                        const planId = plan.plan || plan._id;
+                        if (onUpgrade) {
+                          localStorage.setItem('pending_plan_id', planId);
+                          onUpgrade(planId);
+                        } else {
+                          onStart();
+                        }
+                      }}
+                      className={`w-full py-5 rounded-2xl font-black transition-all active:scale-95 ${plan.isPopular ? 'bg-indigo-600 text-white text-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200' : 'bg-slate-900 text-white text-lg hover:bg-slate-800'}`}
+                    >
+                      {plan.isPopular ? 'Unlock Professional SaaS' : 'Start Free'}
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="stagger-item p-12 rounded-[3rem] border-2 border-slate-100 bg-white flex flex-col group hover:border-slate-200 transition-all hover:shadow-lg">
+                    <h3 className="text-2xl font-black mb-2">SOP Starter</h3>
+                    <div className="text-4xl font-black mb-8">$0</div>
+                    <ul className="space-y-4 mb-12 flex-1">
+                      {['2 Sample Documents', 'Business Profile Mapping', 'Basic AI SOP builder', 'PDF Export Only'].map((f, i) => (
+                        <li key={i} className="flex items-center text-slate-600 font-medium text-sm">
+                          <svg className="w-5 h-5 text-emerald-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button onClick={onStart} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-slate-800 transition-all active:scale-95">Start Free</button>
+                  </div>
+                  <div className="stagger-item p-12 rounded-[3rem] border-4 border-indigo-600 bg-white shadow-2xl shadow-indigo-100 flex flex-col relative md:scale-105 z-10 transition-transform hover:scale-[1.07]">
+                    <div className="absolute top-0 right-12 -translate-y-1/2 px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full">Recommended</div>
+                    <h3 className="text-2xl font-black mb-2">Enterprise SOP Pack</h3>
+                    <div className="text-4xl font-black mb-8">$49<span className="text-sm font-bold text-slate-400">/one-time</span></div>
+                    <ul className="space-y-4 mb-12 flex-1">
+                      {['All 44+ SOP Documents', 'Unlimited PDF & Word Exports', 'Audit-Ready Compliance', 'Custom Team Branding'].map((f, i) => (
+                        <li key={i} className="flex items-center text-slate-900 font-black text-sm">
+                          <svg className="w-5 h-5 text-indigo-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button onClick={onStart} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all active:scale-95">Unlock Professional SaaS</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -623,16 +739,16 @@ const [menuOpen, setMenuOpen] = useState(false);
               </p>
             </div>
 
-            <div>
-              <h4 className="font-black text-white mb-8 uppercase tracking-[0.2em] text-[10px]">Product</h4>
-              <ul className="space-y-4 text-sm font-medium">
-                <li><button className="hover:text-indigo-400 transition-colors">Features</button></li>
-                <li><button className="hover:text-indigo-400 transition-colors">Departments</button></li>
-                <li><button className="hover:text-indigo-400 transition-colors">Templates</button></li>
-                <li><button className="hover:text-indigo-400 transition-colors">Security</button></li>
-                <li><button className="hover:text-indigo-400 transition-colors">Pricing</button></li>
-              </ul>
-            </div>
+            {/* <div> */}
+            {/* <h4 className="font-black text-white mb-8 uppercase tracking-[0.2em] text-[10px]">Product</h4> */}
+            {/* <ul className="space-y-4 text-sm font-medium"> */}
+            {/* <li><button className="hover:text-indigo-400 transition-colors">Features</button></li> */}
+            {/* <li><button className="hover:text-indigo-400 transition-colors">Departments</button></li> */}
+            {/* <li><button className="hover:text-indigo-400 transition-colors">Templates</button></li> */}
+            {/* <li><button className="hover:text-indigo-400 transition-colors">Security</button></li> */}
+            {/* <li><button className="hover:text-indigo-400 transition-colors">Pricing</button></li> */}
+            {/* </ul>
+            </div> */}
 
             <div>
               <h4 className="font-black text-white mb-8 uppercase tracking-[0.2em] text-[10px]">Company</h4>

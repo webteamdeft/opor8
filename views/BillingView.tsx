@@ -30,8 +30,23 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
     const fetchProducts = async () => {
       setLoadingProducts(true);
       try {
-        const response = await DB.payments.getProducts();
-        setProducts(response.data || []);
+        const response: any = await DB.payments.getProducts();
+        const data = response.data || response;
+        const list = Array.isArray(data) ? data : (data.list || []);
+
+        // Normalize product data
+        const normalized = list.map((p: any) => {
+          const metadata = p.metadata || {};
+          return {
+            ...p,
+            isPopular: p.isPopular === true || p.isPopular === 'true' || metadata.isPopular === 'true' || metadata.isPopular === true,
+            features: Array.isArray(p.features) && p.features.length > 0
+              ? p.features
+              : (typeof metadata.features === 'string' ? JSON.parse(metadata.features) : (p.features || []))
+          };
+        });
+
+        setProducts(normalized);
       } catch (err) {
         console.error('[BillingView] Failed to fetch products:', err);
       } finally {
@@ -92,7 +107,7 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-4">Active Plan</p>
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 flex flex-wrap items-center gap-2 sm:gap-3">
-                  {user.isPaid ? 'Professional Pack' : 'Free Preview'}
+                  {user.isPaid ? user.productName : 'Free Preview'}
                   {user.isPaid && <span className="text-[9px] sm:text-[10px] px-2.5 py-0.5 sm:px-3 sm:py-1 bg-indigo-600 text-white rounded-full uppercase tracking-widest font-black shrink-0">Active</span>}
                 </h3>
               </div>
@@ -103,7 +118,7 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
 
             <p className="text-slate-500 text-base sm:text-lg font-medium mb-8 max-w-xl leading-relaxed">
               {user.isPaid
-                ? "You have lifetime access to the Professional Pack. Future compliance updates are included free for 12 months."
+                ? "You have lifetime access to the " + user.productName + ". Future compliance updates are included free for 12 months."
                 : "You are currently previewing documents. Unlock the full professional library to enable Word/PDF exports and brand customization."}
             </p>
 
@@ -127,21 +142,34 @@ export const BillingView: React.FC<{ user: User, onUpgrade: () => void }> = ({ u
                     <div className="h-12 w-full bg-slate-50 rounded-xl"></div>
                   </div>
                 ))
-              ) : products.map((p) => (
-                <div key={p._id} className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm hover:border-indigo-200 transition-all group">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h4 className="font-black text-xl text-slate-900">{p.name}</h4>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{p.metadata?.type || 'Standard'}</p>
+              ) : products.filter(p => p.isActive !== false).map((p) => (
+                <div key={p._id} className={`bg-white p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border shadow-sm hover:border-indigo-200 transition-all group relative ${p.isPopular ? 'border-indigo-600 ring-4 ring-indigo-50' : 'border-slate-200'}`}>
+                  {p.isPopular && (
+                    <div className="absolute top-0 right-12 -translate-y-1/2 px-3 py-1 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full">Most Popular</div>
+                  )}
+                  <div className="flex justify-between items-start mb-6 gap-4">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-black text-xl text-slate-900 truncate" title={p.name}>{p.name}</h4>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{p.metadata?.type || 'Standard'}</p>
                     </div>
-                    <span className="text-2xl font-black text-slate-900">
-                      {p.amount ? `$${p.amount}` : (p.name.toLowerCase().includes('premium') ? '$99' : (p.name.toLowerCase().includes('pro') ? '$49' : '$19'))}
+                    <span className="text-2xl font-black text-slate-900 shrink-0">
+                      {p.amount != null ? `$${p.amount}` : ''}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500 mb-8 line-clamp-2">{p.description}</p>
+                  <p className="text-sm text-slate-500 mb-6 line-clamp-2 h-10">{p.description}</p>
+
+                  <ul className="space-y-2 mb-8">
+                    {(p.features ? p.features.slice(0, 3) : []).map((f: string, i: number) => (
+                      <li key={i} className="flex items-center text-xs text-slate-600 font-medium">
+                        <svg className="w-3.5 h-3.5 text-indigo-500 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        <span className="truncate" title={f}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
                   <button
                     onClick={() => handleUpgrade(p._id)}
-                    className="w-full py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                    className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-sm ${p.isPopular ? 'bg-indigo-600 text-white hover:bg-slate-900' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white'}`}
                   >
                     Select Plan
                   </button>

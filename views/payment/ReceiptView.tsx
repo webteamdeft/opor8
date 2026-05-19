@@ -1,5 +1,5 @@
 import React from 'react';
-import { Transaction } from '../../types';
+import { User, Transaction, Product } from '../../types';
 
 interface ReceiptViewProps {
     transaction: Transaction;
@@ -132,9 +132,7 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ transaction, onClose }
                         </div>
                         <div className="col-span-2">
                             <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1">Product</p>
-                            <p className="font-bold text-slate-900 text-lg">
-                                {transaction.productId === 'pro' ? 'Professional Pack - Lifetime Access' : 'Subscription Plan'}
-                            </p>
+
                         </div>
                         <div className="col-span-2">
                             <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-1">Customer</p>

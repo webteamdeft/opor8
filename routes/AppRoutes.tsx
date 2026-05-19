@@ -61,11 +61,11 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (planId: string = 'pro') => {
     try {
-      const { url } = await DB.payments.createStripeSession('pro');
+      const { url } = await DB.payments.createStripeSession(planId);
       if (url) {
-        console.log(url);
+        console.log('Redirecting to checkout:', url);
         window.location.href = url;
       } else {
         throw new Error('No checkout URL received');
@@ -79,7 +79,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<LandingView onStart={() => navigate('/auth')} />} />
+      <Route path="/" element={<LandingView user={user} onStart={() => navigate('/auth')} onUpgrade={handleUpgrade} />} />
       <Route
         path="/auth"
         element={user ? <Navigate to="/dashboard" replace /> : <AuthView onLogin={onLogin} onBack={() => navigate('/')} />}
@@ -106,6 +106,7 @@ const AppRoutes: React.FC<AppRoutesProps> = ({
           path="/onboarding"
           element={
             <OnboardingView
+              user={user!}
               profile={businessProfile}
               setProfile={setBusinessProfile}
               userId={user?.id || ''}

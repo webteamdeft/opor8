@@ -35,7 +35,7 @@ export const DB = {
           industry: profileData.industry || profileData.industryType || '',
           size: profileData.size || '',
           country: profileData.country || '',
-          tone: profileData.tone || profileData.complianceTone || 'Professional',
+          tone: profileData.tone || profileData.complianceTone || '',
           logoUrl: profileData.logoUrl || profileData.logo_url || profileData.brandingLogo || '',
           // Additional fields for API
           fullName: profileData.fullName || '',
@@ -101,8 +101,8 @@ export const DB = {
       };
     },
 
-    async generateDocumentWithAnswers(answers: { type: string, questionId: string, answer: string }[]): Promise<any> {
-      return await api.post('/openai/generate-document-answer', { answers });
+    async generateDocumentWithAnswers(companyId: string, answers: { type: string, questionId: string, answer: string }[]): Promise<any> {
+      return await api.post('/openai/generate-document-answer', { companyId, answers });
     },
 
     async getActiveJob(): Promise<any> {
@@ -178,7 +178,9 @@ export const DB = {
         lastUpdated: doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : 'N/A',
         pdfUrl: doc.pdfUrl ? (doc.pdfUrl.startsWith('http') ? doc.pdfUrl : `${rootURL}${doc.pdfUrl}`) : undefined,
         docxUrl: doc.docxUrl ? (doc.docxUrl.startsWith('http') ? doc.docxUrl : `${rootURL}${doc.docxUrl}`) : undefined,
-        deploymentStatus: doc.deploymentStatus || 'Live & Audit-Ready'
+        deploymentStatus: doc.deploymentStatus || 'Live & Audit-Ready',
+        companyName: doc.companyName,
+        industry: doc.industry
       }));
     },
 

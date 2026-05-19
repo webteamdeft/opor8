@@ -16,7 +16,7 @@ const App: React.FC = () => {
     industry: '',
     size: '',
     country: '',
-    tone: 'Professional',
+    tone: '',
     logoUrl: ''
   });
 
@@ -42,7 +42,7 @@ const App: React.FC = () => {
           industry: '',
           size: '',
           country: '',
-          tone: 'Professional',
+          tone: '',
           logoUrl: ''
         });
       }
@@ -68,7 +68,7 @@ const App: React.FC = () => {
       industry: '',
       size: '',
       country: '',
-      tone: 'Professional',
+      tone: '',
       logoUrl: ''
     });
   };

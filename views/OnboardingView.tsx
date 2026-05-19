@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { BusinessProfile } from "../types";
+import { BusinessProfile, User } from "../types";
 import { Button, Input } from "../components/UI";
 import { api } from "../services/api";
 
 interface OnboardingViewProps {
+  user: User;
   userId: string;
   profile: BusinessProfile;
   setProfile: (p: BusinessProfile) => void;
@@ -11,6 +12,7 @@ interface OnboardingViewProps {
 }
 
 export const OnboardingView: React.FC<OnboardingViewProps> = ({
+  user,
   userId,
   profile,
   setProfile,
@@ -21,6 +23,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [fetchingProfile, setFetchingProfile] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(profile.brandingLogo || profile.logoUrl || null);
 
   // Fetch existing profile data on mount
   useEffect(() => {
@@ -51,7 +55,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               profileData.complianceTone ||
               profileData.tone ||
               profile.tone ||
-              "Professional",
+              "",
             logoUrl:
               profileData.brandingLogo ||
               profileData.logoUrl ||
@@ -78,7 +82,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               profileData.tone ||
               profile.complianceTone ||
               profile.tone ||
-              "Professional",
+              "",
             primaryExportFormat:
               profileData.primaryExportFormat ||
               profile.primaryExportFormat ||
@@ -92,6 +96,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               "",
           };
           setProfile(updatedProfile);
+          setLogoPreview(updatedProfile.brandingLogo || updatedProfile.logoUrl || null);
         }
       } catch (err) {
         console.warn("[OnboardingView] Failed to fetch profile data:", err);
@@ -110,12 +115,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && (user.isPaid || user.isPro)) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        updateProfile("logoUrl", base64String);
-        updateProfile("brandingLogo", base64String);
+        setLogoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -126,18 +130,32 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
     setError(null);
 
     try {
-      // Prepare the payload for the API
-      const payload = {
-        fullName: profile.fullName || profile.name,
-        dob: profile.dob || "",
-        gender: profile.gender || "",
-        businessName: profile.businessName || profile.name,
-        industryType: profile.industryType || profile.industry,
-        complianceTone:
-          profile.complianceTone || profile.tone || "Professional",
-        primaryExportFormat: profile.primaryExportFormat || "PDF",
-        brandingLogo: profile.brandingLogo || profile.logoUrl || "",
-      };
+      // Use FormData if a file is selected, matching SettingsView logic
+      let payload: any;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('fullName', profile.fullName || profile.name || '');
+        formData.append('dob', profile.dob || "");
+        formData.append('gender', profile.gender || "");
+        formData.append('businessName', profile.businessName || profile.name || '');
+        formData.append('industryType', profile.industryType || profile.industry || '');
+        formData.append('complianceTone', profile.complianceTone || profile.tone || "");
+        formData.append('primaryExportFormat', profile.primaryExportFormat || "PDF");
+        formData.append('brandingLogo', selectedFile);
+        payload = formData;
+      } else {
+        payload = {
+          fullName: profile.fullName || profile.name,
+          dob: profile.dob || "",
+          gender: profile.gender || "",
+          businessName: profile.businessName || profile.name,
+          industryType: profile.industryType || profile.industry,
+          complianceTone:
+            profile.complianceTone || profile.tone || "",
+          primaryExportFormat: profile.primaryExportFormat || "PDF",
+          brandingLogo: profile.brandingLogo || profile.logoUrl || "",
+        };
+      }
 
       // Call the profile update API
       await api.put("/user/profile", payload);
@@ -145,10 +163,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
       // Update local profile state
       const updatedProfile = {
         ...profile,
-        ...payload,
-        name: payload.businessName,
-        industry: payload.industryType,
-        tone: payload.complianceTone,
+        name: profile.businessName || profile.name,
+        industry: profile.industryType || profile.industry,
+        tone: profile.complianceTone || profile.tone,
       };
 
       setProfile(updatedProfile);
@@ -226,6 +243,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                       <input
                         type="date"
                         value={profile.dob || ""}
+                        max={new Date().toISOString().split("T")[0]}
                         onChange={(e) => updateProfile("dob", e.target.value)}
                         className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 bg-slate-50/50 outline-none focus:border-indigo-600 focus:bg-white transition-all font-bold"
                       />
@@ -257,7 +275,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                     size="lg"
                     className="w-full"
                     onClick={() => setStep(2)}
-                    disabled={!profile.fullName}
+                    disabled={!profile.fullName || !profile.dob || !profile.gender}
                   >
                     Next Step
                   </Button>
@@ -361,7 +379,12 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                     <Button
                       size="lg"
                       onClick={() => setStep(3)}
-                      disabled={!profile.businessName && !profile.name}
+                      disabled={
+                        (!profile.businessName && !profile.name) ||
+                        (!profile.industryType && !profile.industry) ||
+                        (!profile.complianceTone && !profile.tone) ||
+                        !profile.primaryExportFormat
+                      }
                     >
                       Next Step
                     </Button>
@@ -373,11 +396,20 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               {step === 3 && (
                 <div className="animate-fadeIn space-y-8 text-center">
                   <div className="space-y-2">
-                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">
-                      Branding
-                    </h2>
+                    <div className="flex flex-col items-center gap-2 mb-2">
+                      <h2 className="text-4xl font-black text-slate-900 tracking-tight">
+                        Branding
+                      </h2>
+                      {!(user.isPaid || user.isPro) && (
+                        <span className="text-[10px] bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                          PRO FEATURE
+                        </span>
+                      )}
+                    </div>
                     <p className="text-slate-500 font-medium">
-                      Upload your logo to personalize your SOPs.
+                      {user.isPaid || user.isPro 
+                        ? "Upload your logo to personalize your SOPs."
+                        : "Brand logo customization is available for Pro users."}
                     </p>
                   </div>
 
@@ -388,38 +420,40 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                   )}
 
                   <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`w-48 h-48 border-4 border-dashed mx-auto flex items-center justify-center cursor-pointer rounded-[2.5rem] transition-all duration-300 hover:border-indigo-400 hover:bg-slate-50 relative group overflow-hidden ${
-                      profile.logoUrl || profile.brandingLogo
+                    onClick={() => (user.isPaid || user.isPro) && fileInputRef.current?.click()}
+                    className={`w-48 h-48 border-4 border-dashed mx-auto flex items-center justify-center rounded-[2.5rem] transition-all duration-300 relative group overflow-hidden ${
+                      user.isPaid || user.isPro
+                        ? "cursor-pointer hover:border-indigo-400 hover:bg-slate-50"
+                        : "cursor-not-allowed opacity-50 border-slate-100 bg-slate-50/30"
+                    } ${
+                      logoPreview
                         ? "border-transparent"
                         : "border-slate-100 bg-slate-50/30"
                     }`}
                   >
-                    {profile.logoUrl || profile.brandingLogo ? (
+                    {logoPreview ? (
                       <>
                         <img
-                          src={
-                            profile.logoUrl ||
-                            profile.brandingLogo ||
-                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHg_rM60_sGCMABjAOF4B9WhWvV6vrEMwcag&s"
-                          }
+                          src={logoPreview}
                           onError={(e) => {
                             e.currentTarget.src =
                               "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHg_rM60_sGCMABjAOF4B9WhWvV6vrEMwcag&s";
                           }}
                           className="h-40 w-40 border-2 border-slate-100 object-cover rounded-full p-4"
                         />
-                        <div className="absolute inset-0 bg-indigo-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <span className="text-white font-black text-xs uppercase tracking-widest">
-                            Change Logo
-                          </span>
-                        </div>
+                        {(user.isPaid || user.isPro) && (
+                          <div className="absolute inset-0 bg-indigo-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <span className="text-white font-black text-xs uppercase tracking-widest">
+                              Change Logo
+                            </span>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="text-center space-y-2">
                         <div className="text-4xl">📸</div>
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                          Upload Logo
+                          {user.isPaid || user.isPro ? "Upload Logo" : "Pro Only"}
                         </span>
                       </div>
                     )}
@@ -429,6 +463,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                       className="hidden"
                       accept="image/*"
                       onChange={handleLogoUpload}
+                      disabled={!(user.isPaid || user.isPro)}
                     />
                   </div>
 
@@ -444,7 +479,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                     <Button
                       size="lg"
                       onClick={handleComplete}
-                      disabled={loading}
+                      disabled={loading || ((user.isPaid || user.isPro) && !logoPreview)}
                     >
                       {loading ? "Saving..." : "Complete"}
                     </Button>

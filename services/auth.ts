@@ -148,6 +148,25 @@ export const authService = {
     });
   },
 
+  async forgotPassword(email: string): Promise<void> {
+    await api.post('/user/forgot-password', { email });
+  },
+
+  async verifyOtp(email: string, otp: string): Promise<string> {
+    const response = await api.post('/user/verify-otp', { email, otp });
+    const data = response?.data || response;
+    // Assuming the token is returned in data.token or data.data.token
+    const token = data?.token || data?.data?.token || data?.data;
+    if (typeof token !== 'string') {
+      console.warn('[AuthService] Token missing or invalid in verifyOtp response:', data);
+    }
+    return token;
+  },
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    await api.post('/user/reset-password', { token, password });
+  },
+
   onAuthStateChange(callback: (user: User | null) => void) {
     authListeners.push(callback);
     return {

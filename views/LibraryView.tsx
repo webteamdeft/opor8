@@ -93,8 +93,9 @@ export const LibraryView: React.FC<{ user: User, onOpenDoc: (d: SOPDocument) => 
           <thead className="bg-slate-50/80 backdrop-blur-md border-b">
             <tr className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
               <th className="px-6 py-4 lg:px-10 lg:py-6">Procedural Title</th>
-              <th className="px-6 py-4 lg:px-10 lg:py-6">Business Vertical</th>
-              <th className="px-6 py-4 lg:px-10 lg:py-6">Deployment Status</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6">Industry Name</th>
+              <th className="px-6 py-4 lg:px-10 lg:py-6">Company Name</th>
+              {/* <th className="px-6 py-4 lg:px-10 lg:py-6">Deployment Status</th> */}
               <th className="px-6 py-4 lg:px-10 lg:py-6">Last Synthesis</th>
               <th className="px-6 py-4 lg:px-10 lg:py-6 text-right">Downloads</th>
             </tr>
@@ -112,14 +113,17 @@ export const LibraryView: React.FC<{ user: User, onOpenDoc: (d: SOPDocument) => 
                   </div>
                 </td>
                 <td className="px-6 py-4 lg:px-10 lg:py-6">
-                  <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500">{d.department}</span>
+                  <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500">{d.industry}</span>
                 </td>
                 <td className="px-6 py-4 lg:px-10 lg:py-6">
+                  <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500">{d.companyName}</span>
+                </td>
+                {/* <td className="px-6 py-4 lg:px-10 lg:py-6">
                   <div className="flex items-center text-emerald-600 text-[10px] font-black uppercase tracking-widest">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>
                     {d.deploymentStatus || 'Live & Audit-Ready'}
                   </div>
-                </td>
+                </td> */}
                 <td className="px-6 py-4 lg:px-10 lg:py-6 text-sm font-bold text-slate-400">
                   {d.lastUpdated}
                 </td>

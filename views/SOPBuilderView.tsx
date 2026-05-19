@@ -18,6 +18,8 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
   const [loadingBasicQuestions, setLoadingBasicQuestions] = useState(false);
   const [newCompanyAnswers, setNewCompanyAnswers] = useState<Record<string, string>>({});
   const [savingCompany, setSavingCompany] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Search State
   const [industrySearch, setIndustrySearch] = useState('');
@@ -242,11 +244,19 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
 
   const handleOpenAddCompany = async () => {
     setIsAddCompanyModalOpen(true);
+    setModalError(null);
+    setFieldErrors({});
     if (basicQuestions.length === 0) {
       setLoadingBasicQuestions(true);
       try {
         const data = await DB.companies.getBasicQuestions();
-        setBasicQuestions(data.data || data.list || data || []);
+        const questions = data.data || data.list || data || [];
+        // Clean up questions by removing trailing colons
+        const cleanedQuestions = questions.map((q: any) => ({
+          ...q,
+          question: q.question?.replace(/:$/, '').trim()
+        }));
+        setBasicQuestions(cleanedQuestions);
 
         // Pre-fill industryId if selected
         if (selectedIndustryId) {
@@ -263,6 +273,23 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
   };
 
   const handleSaveCompany = async () => {
+    setModalError(null);
+    setFieldErrors({});
+
+    // Validate fields
+    const errors: Record<string, string> = {};
+    basicQuestions.filter(q => q.key !== 'documentLanguage').forEach(q => {
+      if (!newCompanyAnswers[q.key] || !newCompanyAnswers[q.key].trim()) {
+        errors[q.key] = `${q.question || q.key} is required`;
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setModalError('Please fill in all required fields.');
+      return;
+    }
+
     setSavingCompany(true);
     try {
       const payload: any = { ...newCompanyAnswers };
@@ -295,7 +322,7 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
       }
     } catch (error) {
       console.error('Failed to save company:', error);
-      alert('Failed to save company. Please try again.');
+      setModalError('Failed to save company. Please try again.');
     } finally {
       setSavingCompany(false);
     }
@@ -333,7 +360,10 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
       else if (data && Array.isArray(data.list)) list = data.list;
       else if (data && data.data && Array.isArray(data.data.list)) list = data.data.list;
       else if (data && Array.isArray(data.data)) list = data.data;
-      setQuestions(list);
+      setQuestions(list.map((q: any) => ({
+        ...q,
+        question: q.question?.replace(/:$/, '').trim()
+      })));
       setCurrentStep(3);
     } catch (error) {
       console.error('Failed to fetch questions:', error);
@@ -347,6 +377,11 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
   };
 
   const handleSubmitAnswers = async () => {
+    if (!selectedCompanyId) {
+      alert("Please select a company before generating.");
+      return;
+    }
+
     // Check if all questions have been answered
     const unansweredQuestions = questions.filter(q => !answers[q._id] || answers[q._id].trim() === '');
 
@@ -367,7 +402,7 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
     setJobStatus('in-progress');
     setJobProgress(0);
     try {
-      const result = await DB.docs.generateDocumentWithAnswers(payload);
+      const result = await DB.docs.generateDocumentWithAnswers(selectedCompanyId, payload);
       console.log('[SOPBuilder] Initial Answer Submission Result:', result);
 
       const status = (result.status || result.data?.status || '').toLowerCase();
@@ -559,8 +594,8 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
 
       {/* Step 2: Company Selection */}
       {currentStep === 2 && (
-        <section className="space-y-6 animate-fade-in-up">
-          <div className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-indigo-50/20">
+        <section className="!mt-0 animate-fade-in-up">
+          <div className=" !mt-0  bg-white p-6 sm:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-indigo-50/20">
             <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-4">
@@ -943,7 +978,7 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
 
       {/* Add Company Modal */}
       {isAddCompanyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div className="!mt-0 fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-fade-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-100">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase">Add New Company</h2>
@@ -955,6 +990,12 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
               </button>
             </div>
             <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+              {modalError && (
+                <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-bold flex items-center gap-3 animate-pulse">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {modalError}
+                </div>
+              )}
               {loadingBasicQuestions ? (
                 <div className="flex justify-center p-8">
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
@@ -967,8 +1008,15 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
                       {q.key === 'industryId' ? (
                         <select
                           value={newCompanyAnswers[q.key] || selectedIndustryId || ''}
-                          onChange={(e) => setNewCompanyAnswers(prev => ({ ...prev, [q.key]: e.target.value }))}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
+                          onChange={(e) => {
+                            setNewCompanyAnswers(prev => ({ ...prev, [q.key]: e.target.value }));
+                            if (fieldErrors[q.key]) setFieldErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors[q.key];
+                              return newErrors;
+                            });
+                          }}
+                          className={`w-full px-4 py-2.5 bg-slate-50 border ${fieldErrors[q.key] ? 'border-red-300' : 'border-slate-200'} rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors`}
                         >
                           <option value="" disabled>Select an industry</option>
                           {industries.map(ind => (
@@ -979,10 +1027,20 @@ export const SOPBuilderView: React.FC<{ user: User, onNext: (packId: string) => 
                         <input
                           type="text"
                           value={newCompanyAnswers[q.key] || ''}
-                          onChange={(e) => setNewCompanyAnswers(prev => ({ ...prev, [q.key]: e.target.value }))}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors"
-                          placeholder={`Enter ${q.key}`}
+                          onChange={(e) => {
+                            setNewCompanyAnswers(prev => ({ ...prev, [q.key]: e.target.value }));
+                            if (fieldErrors[q.key]) setFieldErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors[q.key];
+                              return newErrors;
+                            });
+                          }}
+                          className={`w-full px-4 py-2.5 bg-slate-50 border ${fieldErrors[q.key] ? 'border-red-300' : 'border-slate-200'} rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors`}
+                          placeholder={`Enter ${q.question || q.key}`}
                         />
+                      )}
+                      {fieldErrors[q.key] && (
+                        <p className="text-[10px] text-red-500 font-bold ml-1">{fieldErrors[q.key]}</p>
                       )}
                     </div>
                   ))}

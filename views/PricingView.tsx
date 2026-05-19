@@ -23,8 +23,23 @@ export const PricingView: React.FC<{ user?: User | null }> = ({ user }) => {
 
     const fetchProducts = async () => {
       try {
-        const response = await DB.payments.getProducts();
-        setProducts(response.data || []);
+        const response: any = await DB.payments.getProducts();
+        const data = response.data || response;
+        const list = Array.isArray(data) ? data : (data.list || []);
+
+        // Normalize product data
+        const normalized = list.map((p: any) => {
+          const metadata = p.metadata || {};
+          return {
+            ...p,
+            isPopular: p.isPopular === true || p.isPopular === 'true' || metadata.isPopular === 'true' || metadata.isPopular === true,
+            features: Array.isArray(p.features) && p.features.length > 0
+              ? p.features
+              : (typeof metadata.features === 'string' ? JSON.parse(metadata.features) : (p.features || []))
+          };
+        });
+
+        setProducts(normalized);
       } catch (error) {
         console.error('Failed to fetch products:', error);
       } finally {
@@ -35,17 +50,18 @@ export const PricingView: React.FC<{ user?: User | null }> = ({ user }) => {
   }, []);
 
   const handleUpgrade = async (productId: string) => {
-    if (!user) {
-      window.location.href = '/auth';
-      return;
-    }
-
     try {
       const p = products.find(prod => prod._id === productId || prod.stripeProductId === productId);
-      const planId = p?.plan;
+      const planId = p?.plan || p?.stripeProductId || p?._id;
 
       if (!planId) {
         throw new Error('Plan identifier not found for this product');
+      }
+
+      if (!user) {
+        localStorage.setItem('pending_plan_id', planId);
+        window.location.href = '/auth';
+        return;
       }
 
       const { url } = await DB.payments.createStripeSession(planId);
@@ -81,28 +97,14 @@ export const PricingView: React.FC<{ user?: User | null }> = ({ user }) => {
     id: p._id,
     icon: getPlanIcon(p.name),
     name: p.name,
-    price: p.amount ? `$${p.amount}` : (p.name.toLowerCase().includes('premium') ? '$99' : (p.name.toLowerCase().includes('pro') ? '$49' : '$19')),
+    price: p.amount != null ? `$${p.amount}` : '',
     period: p.billingType || (p.metadata?.type === 'subscription' ? 'month' : 'pack'),
     description: p.description,
-    features: p.features && p.features.length > 0 ? p.features : (p.name.toLowerCase().includes('premium') ? [
-      '50 document generations',
-      'Everything in Pro',
-      'Advanced Compliance Audit',
-      'Custom API access'
-    ] : (p.name.toLowerCase().includes('pro') ? [
-      '10 document generations',
-      'All departments covered',
-      'Word & PDF export',
-      'Priority support'
-    ] : [
-      '1 document generation',
-      'Basic templates',
-      'Email support'
-    ])),
-    cta: user?.isPaid && p.name.toLowerCase().includes('pro') ? 'Current Plan' : (user ? 'Upgrade Now' : 'Get Started'),
-    popular: p.isPopular || p.name.toLowerCase().includes('pro'),
+    features: p.features && p.features.length > 0 ? p.features : [],
+    cta: (user?.isPaid || user?.isPro) && p.name.toLowerCase().includes('pro') ? 'Current Plan' : (user ? 'Upgrade Now' : 'Get Started'),
+    popular: p.isPopular,
     gradient: getPlanGradient(p.name),
-    isCurrent: user?.isPaid && p.name.toLowerCase().includes('pro')
+    isCurrent: (user?.isPaid || user?.isPro) && p.name.toLowerCase().includes('pro')
   })) : [
     // Fallback if no products are fetched yet
     {
@@ -191,74 +193,108 @@ export const PricingView: React.FC<{ user?: User | null }> = ({ user }) => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-20 relative min-h-[400px]">
+          <div className="relative min-h-[400px]">
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-slate-950/20 backdrop-blur-sm z-10 rounded-3xl">
                 <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
-            {plans.map((plan, index) => (
-              <div
-                key={index}
-                className={`bg-slate-900/50 border ${plan.popular ? 'border-blue-500 shadow-2xl shadow-blue-500/20' : 'border-slate-800'
-                  } rounded-2xl p-8 relative flex flex-col ${plan.popular ? 'transform scale-105 z-1' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                      Most Popular
-                    </span>
+
+            {!user ? (
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-slate-900 shadow-2xl border border-slate-800 rounded-[3rem] p-12 sm:p-20 text-center relative overflow-hidden group">
+                  <div className="relative z-10">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-10 text-4xl shadow-2xl shadow-blue-500/20 group-hover:scale-110 transition-transform duration-500">🔒</div>
+                    <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Unlock Exclusive Pricing.</h2>
+                    <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+                      Join hundreds of elite companies standardizing their operations with OPOR8.
+                      Sign in or create an account to view our dynamic SaaS plans.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                      <Link to="/auth" className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto px-12 py-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-[2rem] font-bold text-xl hover:from-blue-600 hover:to-indigo-700 shadow-2xl shadow-blue-500/20 transition-all">
+                          Login to View Plans
+                        </Button>
+                      </Link>
+                      <Link to="/auth" className="w-full sm:w-auto">
+                        <Button variant="secondary" className="w-full sm:w-auto px-12 py-6 border-slate-700 text-white rounded-[2rem] font-bold text-xl hover:bg-slate-800 transition-all">
+                          Join OPOR8 Free
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                )}
 
-                <div className={`w-14 h-14 bg-gradient-to-br ${plan.gradient} rounded-xl flex items-center justify-center mb-6`}>
-                  <plan.icon className="w-7 h-7 text-white" />
+                  {/* Background Accents */}
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+                  <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
                 </div>
-
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-slate-400 mb-6 flex-grow">{plan.description}</p>
-
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-bold text-white">{plan.price}</span>
-                    {plan.period && (
-                      <span className="text-slate-400 text-sm">/{plan.period}</span>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => {
-                    if (plan.id === 'enterprise' || plan.name.toLowerCase().includes('enterprise')) {
-                      window.location.href = '/contact';
-                    } else if (plan.id === 'starter' || plan.name.toLowerCase().includes('starter')) {
-                      window.location.href = user ? '/dashboard' : '/auth';
-                    } else {
-                      handleUpgrade(plan.id);
-                    }
-                  }}
-                  className={`w-full mb-8 ${plan.popular
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-                    : ''
-                    } ${plan.isCurrent ? 'opacity-50 cursor-default' : ''}`}
-                  variant={plan.popular ? 'primary' : 'secondary'}
-                  disabled={plan.isCurrent}
-                >
-                  {plan.cta}
-                </Button>
-
-                <ul className="space-y-4">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 text-blue-400" />
-                      </div>
-                      <span className="text-slate-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            ))}
+            ) : (
+              <div className="grid md:grid-cols-3 gap-8">
+                {plans.map((plan, index) => (
+                  <div
+                    key={index}
+                    className={`bg-slate-900/50 border ${plan.popular ? 'border-blue-500 shadow-2xl shadow-blue-500/20' : 'border-slate-800'
+                      } rounded-2xl p-8 relative flex flex-col ${plan.popular ? 'transform scale-105 z-1' : ''}`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <span className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                          Most Popular
+                        </span>
+                      </div>
+                    )}
+
+                    <div className={`w-14 h-14 bg-gradient-to-br ${plan.gradient} rounded-xl flex items-center justify-center mb-6`}>
+                      <plan.icon className="w-7 h-7 text-white" />
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-white mb-2 truncate" title={plan.name}>{plan.name}</h3>
+                    <p className="text-slate-400 mb-6 flex-grow line-clamp-3 h-18">{plan.description}</p>
+
+                    <div className="mb-6">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-5xl font-bold text-white">{plan.price}</span>
+                        {plan.period && (
+                          <span className="text-slate-400 text-sm">/{plan.period}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={() => {
+                        if (plan.id === 'enterprise' || plan.name.toLowerCase().includes('enterprise')) {
+                          window.location.href = '/contact';
+                        } else if (plan.id === 'starter' || plan.name.toLowerCase().includes('starter')) {
+                          window.location.href = user ? '/dashboard' : '/auth';
+                        } else {
+                          handleUpgrade(plan.id);
+                        }
+                      }}
+                      className={`w-full mb-8 ${plan.popular
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+                        : ''
+                        } ${plan.isCurrent ? 'opacity-50 cursor-default' : ''}`}
+                      variant={plan.popular ? 'primary' : 'secondary'}
+                      disabled={plan.isCurrent}
+                    >
+                      {plan.cta}
+                    </Button>
+
+                    <ul className="space-y-4">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Check className="w-3 h-3 text-blue-400" />
+                          </div>
+                          <span className="text-slate-300 truncate" title={feature}>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-12 mb-20">

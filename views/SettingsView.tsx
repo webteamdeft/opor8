@@ -22,7 +22,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [oldPasswordError, setOldPasswordError] = useState<string | null>(null);
+  const [newPasswordError, setNewPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
@@ -68,7 +70,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
       formData.append('gender', localProfile.gender || '');
       formData.append('businessName', localProfile.businessName || localProfile.name || '');
       formData.append('industryType', localProfile.industryType || localProfile.industry || '');
-      formData.append('complianceTone', localProfile.complianceTone || localProfile.tone || 'Professional');
+      formData.append('complianceTone', localProfile.complianceTone || localProfile.tone || '');
       formData.append('primaryExportFormat', localProfile.primaryExportFormat || 'PDF');
 
       if (selectedFile) {
@@ -105,37 +107,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
     }
   };
 
-  const validatePassword = (password: string) => {
-    // Basic strong password check: min 8 chars, at least 1 number, 1 special char
-    const minLength = 8;
-    const hasNumber = /\d/;
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/;
-
-    if (password.length < minLength) return "Password must be at least 8 characters long.";
-    if (!hasNumber.test(password)) return "Password must contain at least one number.";
-    if (!hasSpecial.test(password)) return "Password must contain at least one special character.";
-
+  const validatePassword = (password: string): string | null => {
+    // Strong password: 8+ chars, upper, lower, number, special, no spaces
+    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])(?!.*\s).{8,}$/;
+    if (!re.test(password)) {
+      return "New password must be at least 8 characters long with uppercase, lowercase, number, special character, and no spaces.";
+    }
     return null;
   };
 
   const handleChangePassword = async () => {
-    setPasswordError(null);
+    setOldPasswordError(null);
+    setNewPasswordError(null);
+    setConfirmPasswordError(null);
     setPasswordSuccess(null);
 
-    // Client-side validation
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setPasswordError("All password fields are required.");
-      return;
+    let hasError = false;
+
+    if (!oldPassword) {
+      setOldPasswordError('Please enter current password.');
+      hasError = true;
     }
 
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match.");
-      return;
+    if (!newPassword) {
+      setNewPasswordError('Please enter new password.');
+      hasError = true;
+    } else {
+      const strengthError = validatePassword(newPassword);
+      if (strengthError) {
+        setNewPasswordError(strengthError);
+        hasError = true;
+      }
     }
 
-    const strengthError = validatePassword(newPassword);
-    if (strengthError) {
-      setPasswordError(strengthError);
+    if (!confirmPassword) {
+      setConfirmPasswordError('Please enter confirm new password.');
+      hasError = true;
+    } else if (newPassword && newPassword !== confirmPassword) {
+      setConfirmPasswordError('New password and confirm new password does not match.');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    if (!navigator.onLine) {
+      setOldPasswordError('Please check your internet connection.');
       return;
     }
 
@@ -143,7 +159,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
 
     try {
       await authService.changePassword(oldPassword, newPassword);
-      setPasswordSuccess("Password changed successfully.");
+      setPasswordSuccess('Password reset successfully.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -152,7 +168,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
       setTimeout(() => setPasswordSuccess(null), 3000);
     } catch (err: any) {
       console.error('Change password error:', err);
-      setPasswordError(err.message || 'Failed to change password. content-type/json');
+      if (err.message == "Please enter valid old password.") {
+        setOldPasswordError('Please enter correct current password');
+      }
     } finally {
       setIsChangingPassword(false);
     }
@@ -196,6 +214,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
               <input
                 type="date"
                 value={localProfile.dob || ''}
+                max={new Date().toISOString().split("T")[0]}
                 onChange={(e) => updateProfile('dob', e.target.value)}
                 className="w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-slate-100 outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base"
               />
@@ -228,38 +247,67 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
               <input
                 type="password"
                 value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
+                onChange={(e) => {
+                  setOldPassword(e.target.value);
+                  if (e.target.value) setOldPasswordError(null);
+                  else setOldPasswordError('Please enter current password.');
+                }}
                 placeholder="••••••••"
-                className="w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-slate-100 outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base"
+                className={`w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 ${oldPasswordError ? 'border-red-300' : 'border-slate-100'} outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base`}
               />
+              {oldPasswordError && <p className="text-red-500 text-xs font-semibold mt-1.5 ml-2">{oldPasswordError}</p>}
             </div>
             <div>
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 sm:mb-3 ml-2">New Password</label>
               <input
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setNewPassword(val);
+                  if (!val) {
+                    setNewPasswordError('Please enter new password.');
+                  } else {
+                    const err = validatePassword(val);
+                    setNewPasswordError(err);
+                  }
+                  // Re-validate confirm if already filled
+                  if (confirmPassword && val && val !== confirmPassword) {
+                    setConfirmPasswordError('New password and confirm new password does not match.');
+                  } else if (confirmPassword && val && val === confirmPassword) {
+                    setConfirmPasswordError(null);
+                  }
+                }}
                 placeholder="••••••••"
-                className="w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-slate-100 outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base"
+                className={`w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 ${newPasswordError ? 'border-red-300' : 'border-slate-100'} outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base`}
               />
+              {newPasswordError && <p className="text-red-500 text-xs font-semibold mt-1.5 ml-2">{newPasswordError}</p>}
             </div>
             <div>
               <label className="block text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 sm:mb-3 ml-2">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setConfirmPassword(val);
+                  if (!val) {
+                    setConfirmPasswordError('Please enter confirm new password.');
+                  } else if (newPassword && val !== newPassword) {
+                    setConfirmPasswordError('New password and confirm new password does not match.');
+                  } else {
+                    setConfirmPasswordError(null);
+                  }
+                }}
                 placeholder="••••••••"
-                className="w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-slate-100 outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base"
+                className={`w-full px-5 py-3.5 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl border-2 ${confirmPasswordError ? 'border-red-300' : 'border-slate-100'} outline-none focus:border-indigo-600 bg-slate-50/50 font-bold text-sm sm:text-base`}
               />
+              {confirmPasswordError && <p className="text-red-500 text-xs font-semibold mt-1.5 ml-2">{confirmPasswordError}</p>}
             </div>
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex-1">
-              {passwordError && (
-                <p className="text-red-500 font-bold text-sm bg-red-50 p-3 rounded-xl border border-red-100 inline-block">{passwordError}</p>
-              )}
               {passwordSuccess && (
                 <p className="text-emerald-500 font-bold text-sm bg-emerald-50 p-3 rounded-xl border border-emerald-100 inline-block">{passwordSuccess}</p>
               )}
@@ -412,14 +460,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onLogout, prof
         </div>
 
         {/* Danger Zone Section */}
-        <section className="bg-white p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3.5rem] border-4 border-red-50 space-y-6 sm:space-y-8">
+        {/* <section className="bg-white p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl sm:rounded-[2.5rem] lg:rounded-[3.5rem] border-4 border-red-50 space-y-6 sm:space-y-8">
           <div className="flex items-center space-x-3 sm:space-x-4">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] bg-red-100 text-red-600 flex items-center justify-center text-xl sm:text-2xl">⚠️</div>
             <h3 className="text-xl sm:text-2xl font-black text-slate-900">Danger Zone</h3>
           </div>
           <p className="text-slate-500 text-base sm:text-lg leading-relaxed max-w-2xl font-medium">Permanently delete your account and all generated SOPs. <b>This action is irreversible.</b> All data will be purged from our AI compliance database immediately.</p>
           <button onClick={() => confirm('Are you absolutely sure? This will delete all your SOPs.')} className="w-full md:w-auto px-8 py-4 sm:px-10 sm:py-5 bg-red-50 text-red-600 border-2 border-red-100 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg hover:bg-red-600 hover:text-white transition-all active:scale-95">Permanently Purge Data</button>
-        </section>
+        </section> */}
       </div>
     </div>
   );
